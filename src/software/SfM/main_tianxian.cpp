@@ -56,7 +56,9 @@ bool drawing = false;
 CvRect rect;
 CvPoint origin;
 bool istuNumOne = true;
-string image_path = "C:\\Users\\Ethan\\Desktop\\8m\\";
+//默认情况下的图像与TXT的路径，可以使用-c进行修改
+string image_path = "C:\\Users\\Ethan\\Desktop\\\jiejiaotianxian\\8m\\";
+//默认情况下的图像索引参数，可以在命令行中以-a, -b的形式修改
 int firstImgId = 0;
 int secondImgId = 1;
 void onMouse(int event, int x, int y, int flags, void *param)
@@ -93,14 +95,14 @@ void onMouse(int event, int x, int y, int flags, void *param)
 		//cvShowImage("ScreenShot", img);
 		if (istuNumOne)
 		{
-			string filename1 = image_path + "picSmall01.jpg";
+			string filename1 = image_path + "matches\\picSmall01.jpg";
 			const char * file1 = filename1.c_str();
 			cvSaveImage(file1, img);
 			istuNumOne = false;
 		}
 		else
 		{
-			string filename2 = image_path + "picSmall02.jpg";
+			string filename2 = image_path + "matches\\picSmall02.jpg";
 			const char *file2 = filename2.c_str();
 			cvSaveImage(file2, img);
 			istuNumOne = true;
@@ -308,7 +310,7 @@ vector<string> listTxtFiles(string path)
 				txt_files.push_back(path + fileName);
 			}
 		}
-		std::cout << errno<<endl;
+		//std::cout << errno<<endl;
 		//	cout << fileInfo.name << (fileInfo.attrib&_A_SUBDIR ? "[folder]" : "[file]") << endl;
 	} while (_findnext(hFile, &fileInfo) == 0);
 
@@ -538,7 +540,11 @@ int main(int argc, char **argv)
   cmd.add( make_option('r', iRotationAveragingMethod, "rotationAveraging") );
   cmd.add( make_option('t', iTranslationAveragingMethod, "translationAveraging") );
   cmd.add( make_option('f', sIntrinsic_refinement_options, "refineIntrinsics") );
-
+  //第一张图像的索引号以-a表示，第二张图像的索引号以-b表示
+  cmd.add( make_option('a', firstImgId, "imgIndex 0"));
+  cmd.add(make_option( 'b', secondImgId, "imgIndex 1"));
+  //图像与txt所在的文件夹
+  cmd.add(make_option('c', image_path, "image_path"));
   try {
     if (argc == 1) throw std::string("Invalid parameter.");
     cmd.process(argc, argv);
@@ -687,9 +693,8 @@ int main(int argc, char **argv)
 	  }
 	  //获取现实空间中的旋转矩阵
 	  vector<string> txtNames;
-
+	  image_path = image_path + "\\";
 	  //三角测量的两个图像序号
-
 	  txtNames = listTxtFiles(image_path);
 	  vector<Eigen::Matrix<double, 3, 3>> rotationsAndroid;
 	  Eigen::Matrix<double, 3, 3> tempMat1, tempMat2;
@@ -939,8 +944,8 @@ int main(int argc, char **argv)
 	  cout << pointOne << endl;
 	  cout << pointTwo << endl;
 
-	  String image_path1 = image_path + "picSmall01.jpg"; //parser.get<String>( 0 );
-	  String image_path2 = image_path + "picSmall02.jpg"; //parser.get<String>( 1 );
+	  String image_path1 = image_path + "matches\\picSmall01.jpg"; //parser.get<String>( 0 );
+	  String image_path2 = image_path + "matches\\picSmall02.jpg"; //parser.get<String>( 1 );
 	  if (image_path1.empty() || image_path2.empty())
 	  {
 		  //help();
@@ -1112,7 +1117,7 @@ int main(int argc, char **argv)
 		  if (ii % 2)
 			  line(imageMat4, point1[ii - 1], point1[ii], Scalar(255, 0, 0), 1);
 	  }
-	  imwrite(image_path + "picGai01.jpg", imageMat4);
+	  imwrite(image_path + "matches\\picGai01.jpg", imageMat4);
 
 
 	  //cout << point1 << endl;
@@ -1156,7 +1161,7 @@ int main(int argc, char **argv)
 	  }
 
 	  waitKey(0);
-	  imwrite(image_path + "picGai02.jpg", imageMat3);
+	  imwrite(image_path + "matches\\picGai02.jpg", imageMat3);
 
 
 
@@ -1221,9 +1226,9 @@ int main(int argc, char **argv)
 		  stlplus::create_filespec(sOutDir, "cloud_and_poses", ".ply"),
 		  ESfM_Data(ALL));
 	  
-	  getchar();
-	  return EXIT_SUCCESS;
+	  //getchar();
+	  //return EXIT_SUCCESS;
   }
   getchar();
-  return EXIT_SUCCESS;
+  //return EXIT_SUCCESS;
 }
