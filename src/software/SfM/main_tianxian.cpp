@@ -1215,7 +1215,7 @@ int main(int argc, char **argv)
 		  // iterP->second.center() = iterP->second.center() - firstVec;
 		  iterP->second.center() = finalrt*iterP->second.center();
 	  }
-	  getchar();
+	  //getchar();
 	  //-- Export to disk computed scene (data & visualizable results)
 	  std::cout << "...Export SfM_Data to disk." << std::endl;
 	  Save(my_sfm_data,
