@@ -1159,11 +1159,8 @@ int main(int argc, char **argv)
 		  circle(imageMat3, ans, 0.5, Scalar(0, 0, 255), 3, 8, 0);
 
 	  }
-	  
-	  waitKey(0);
-	  imshow("image", imageMat3);
-	  waitKey(0);
 	  imwrite(image_path + "matches\\picGai02.jpg", imageMat3);
+
 	  std::vector<Vec3> points3D;
 	  Vec3 Xtemp;
 	  for (int i = 0; i < points_1.size(); i++) {
@@ -1231,6 +1228,7 @@ int main(int argc, char **argv)
 		  ESfM_Data(ALL));
 	  
 	  getchar();
+	  exit(0);
 	 // return EXIT_SUCCESS;
   }
   getchar();
