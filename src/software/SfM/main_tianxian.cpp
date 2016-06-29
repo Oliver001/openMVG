@@ -355,13 +355,13 @@ vector<string> listJpgFiles(string path)
 
 }
 
- void getFuYang(double tx, double ty, double tz, double rx, double ry, double rz) {
+ double getFuYang(double tx, double ty, double tz, double rx, double ry, double rz) {
 	double dis22_ = getDistance(tx, ty, tz, tx, ty, rz);
 	double dis24 = getDistance(tx, ty, tz, rx, ry, rz);
 	double theta = asin(dis22_ / dis24);
 	double fuyang = (theta * 360) / (2 * M_PI);
 	cout << "俯仰角:" << fuyang << endl;
-
+	return fuyang;
 }
 // void getShuiPing(double tx, double ty, double tz, double rx, double ry, double rz){
 //	double dis1_3 = getDistance(tx, ty, rz, rx, ry, rz);
@@ -372,7 +372,7 @@ vector<string> listJpgFiles(string path)
 //
 //}
 
- void getShuiPing(double tx, double ty, double tz, double rx, double ry, double rz) {
+ double getShuiPing(double tx, double ty, double tz, double rx, double ry, double rz) {
 	double angle;
 	double vecX, vecY;
 	if (tz >= rz) {
@@ -406,7 +406,7 @@ vector<string> listJpgFiles(string path)
 	}
 	angle = (angle * 360) / (2 * M_PI);
 	cout << "水平角:" << angle << endl;
-
+	return angle;
 }
 // 获得一个路径下所有的jpg 文件
 
@@ -1061,7 +1061,7 @@ int main(int argc, char **argv)
 		  Point2d midPoint = CvPoint((keylines1[i].startPointX + keylines1[i].endPointX) / 2, (keylines1[i].startPointY + keylines1[i].endPointY) / 2);
 		  putText(imageMat1, putNum, midPoint, CV_FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
 	  }
-	  imshow("choosePic01", imageMat1);
+	  imshow("第一张图片", imageMat1);
 
 
 	  limitMax = 10 < keylines2.size() ? 10 : keylines2.size();
@@ -1074,7 +1074,7 @@ int main(int argc, char **argv)
 		  Point2d midPoint = CvPoint((keylines2[i].startPointX + keylines2[i].endPointX) / 2, (keylines2[i].startPointY + keylines2[i].endPointY) / 2);
 		  putText(imageMat2, putNum, midPoint, CV_FONT_HERSHEY_SIMPLEX, 1, Scalar(0, 0, 255));
 	  }
-	  imshow("choosePic02", imageMat2);
+	  imshow("第二张图片", imageMat2);
 
 	  waitKey(0);
 
@@ -1113,7 +1113,7 @@ int main(int argc, char **argv)
 	  cv::Mat imageMat4 = imread(img1, 1);
 	  for (int ii = 0; ii < point1.size(); ii++)
 	  {
-		  circle(imageMat4, point1[ii], 1.5, Scalar(0, 0, 255), 3, 8, 0);
+		  circle(imageMat4, point1[ii], 0.5, Scalar(0, 0, 255), 3, 8, 0);
 		  if (ii % 2)
 			  line(imageMat4, point1[ii - 1], point1[ii], Scalar(255, 0, 0), 1);
 	  }
@@ -1156,15 +1156,12 @@ int main(int argc, char **argv)
 		  cout << setprecision(15) << "!!" << showpoint << ans << endl;
 		  out << setprecision(15) << ans.x << " " << ans.y << endl;
 		  points_2.push_back(Vec2(ans.x, ans.y));
-		  circle(imageMat3, ans, 0.8, Scalar(0, 0, 255), 3, 8, 0);
+		  circle(imageMat3, ans, 0.5, Scalar(0, 0, 255), 3, 8, 0);
 
 	  }
 
 	  waitKey(0);
-	  imwrite(image_path + "matches\\picGai02.jpg", imageMat3);
-
-
-
+	  imwrite(image_path + " matches\\picGai02.jpg", imageMat3);
 
 	  std::vector<Vec3> points3D;
 	  Vec3 Xtemp;
@@ -1188,13 +1185,20 @@ int main(int argc, char **argv)
 		  outPoints << points3D[i].x() << " " << points3D[i].y() << " " << points3D[i].z() << " " << 255 << " " << 0 << " " << 0 << endl;
 	  }
 	  outPoints.close();
-
-
 	  //计算姿态角
+	  string angle = image_path + "angle";
+	  mkdir(angle.c_str());
+	  angle = "angle//angle01.txt";
+	  angle[12] = firstImgId + '0';
+	  angle[13] = secondImgId + '0';
+	  fstream outAngle(image_path + angle, ios::out);
 	  for (unsigned int i = 0; i < points3D.size(); i = i + 2) {
-		  getFuYang(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
-		  getShuiPing(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
+		  double fuyang = getFuYang(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
+		  double shuiping = getShuiPing(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
+		  outAngle << setprecision(15) << "俯仰角：" << fuyang << endl << "水平角：" << shuiping << endl;
 	  }
+	  outAngle.close();
+
 
 	  for (Landmarks::iterator iterL = my_sfm_data.structure.begin();
 		  iterL != my_sfm_data.structure.end(); ++iterL)
@@ -1214,8 +1218,8 @@ int main(int argc, char **argv)
 		  //iterP->second.center().z() = -iterP->second.center().z();
 		  // iterP->second.center() = iterP->second.center() - firstVec;
 		  iterP->second.center() = finalrt*iterP->second.center();
-	  }
-	  //getchar();
+	  }  
+	  getchar();
 	  //-- Export to disk computed scene (data & visualizable results)
 	  std::cout << "...Export SfM_Data to disk." << std::endl;
 	  Save(my_sfm_data,
@@ -1226,8 +1230,8 @@ int main(int argc, char **argv)
 		  stlplus::create_filespec(sOutDir, "cloud_and_poses", ".ply"),
 		  ESfM_Data(ALL));
 	  
-	  //getchar();
-	  //return EXIT_SUCCESS;
+	  getchar();
+	  return EXIT_SUCCESS;
   }
   getchar();
   //return EXIT_SUCCESS;
