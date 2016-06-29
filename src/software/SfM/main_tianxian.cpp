@@ -867,8 +867,10 @@ int main(int argc, char **argv)
 	  cout << "RSME: " << RSME << endl;
 	  cout << "Average RSME:" << RSME / eulerVector.size() << endl;
 
-
-	  fstream tr0(image_path + "transformRot.txt", ios::out);
+	  //创建TXT目录
+	  string txtPath = image_path + "txtFiles";
+	  mkdir(txtPath.c_str());
+	  fstream tr0(txtPath + "\\transformRot.txt", ios::out);
 	  for (unsigned int i = 0; i < cameraNum; i++) {
 		  tr0 << "rt" << i << endl << rt[i] << endl;
 	  }
@@ -1082,7 +1084,8 @@ int main(int argc, char **argv)
 	  int lineIdx2[10]; //线2的代号
 	  int lineTp = 0;
 	  vector<Vec2> points_1, points_2;
-	  fstream out(image_path + "point.txt", ios::out);
+	  
+	  fstream out(txtPath + "\\point.txt", ios::out);
 	  vector<Point2f> point1;
 	  //char aa;
 	  while (std::cin >> lineIdx1)
@@ -1109,6 +1112,20 @@ int main(int argc, char **argv)
 
 	  destroyAllWindows();
 
+	  //设置极线图像的路径与图像名称，保留每次计算的极限图像
+	  //创建路径
+	  string epipolarImgPath = image_path + "epipolarImg";
+	  mkdir(epipolarImgPath.c_str());
+	  //设置图像名称，注意\\仅在数组中占用一位
+	  string epiImg1Path = "epipolarImg\\fisrtImg00.jpg";
+	  epiImg1Path[20] = firstImgId + '0';
+	  epiImg1Path[21] = secondImgId + '0';
+	  epiImg1Path = image_path + epiImg1Path;
+	  string epiImg2Path = "epipolarImg\\secondImg00.jpg";
+	  epiImg2Path[21] = firstImgId + '0';
+	  epiImg2Path[22] = secondImgId + '0';
+	  epiImg2Path = image_path + epiImg2Path;
+
 	  //画图像1中的两点
 	  cv::Mat imageMat4 = imread(img1, 1);
 	  for (int ii = 0; ii < point1.size(); ii++)
@@ -1117,7 +1134,7 @@ int main(int argc, char **argv)
 		  if (ii % 2)
 			  line(imageMat4, point1[ii - 1], point1[ii], Scalar(255, 0, 0), 1);
 	  }
-	  imwrite(image_path + "matches\\picGai01.jpg", imageMat4);
+	  imwrite(epiImg1Path, imageMat4);
 
 
 	  //cout << point1 << endl;
@@ -1159,7 +1176,7 @@ int main(int argc, char **argv)
 		  circle(imageMat3, ans, 0.5, Scalar(0, 0, 255), 3, 8, 0);
 
 	  }
-	  imwrite(image_path + "matches\\picGai02.jpg", imageMat3);
+	  imwrite(epiImg2Path, imageMat3);
 
 	  std::vector<Vec3> points3D;
 	  Vec3 Xtemp;
@@ -1178,17 +1195,17 @@ int main(int argc, char **argv)
 		  trianObj.clear();
 	  }
 
-	  fstream outPoints(image_path + "points3D.txt", ios::out);
+	  fstream outPoints(txtPath + "\\points3D.txt", ios::out);
 	  for (int i = 0; i < points3D.size(); i++) {
 		  outPoints << points3D[i].x() << " " << points3D[i].y() << " " << points3D[i].z() << " " << 255 << " " << 0 << " " << 0 << endl;
 	  }
 	  outPoints.close();
 	  //计算姿态角
-	  string angle = image_path + "angle";
-	  mkdir(angle.c_str());
-	  angle = "angle//angle01.txt";
-	  angle[12] = firstImgId + '0';
-	  angle[13] = secondImgId + '0';
+	  string anglePath = image_path + "angle";
+	  mkdir(anglePath.c_str());
+	  string angle = "angle\\angle00.txt";
+	  angle[11] = firstImgId +  '0';
+	  angle[12] = secondImgId + '0';
 	  fstream outAngle(image_path + angle, ios::out);
 	  for (unsigned int i = 0; i < points3D.size(); i = i + 2) {
 		  double fuyang = getFuYang(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
