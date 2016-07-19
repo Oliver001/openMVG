@@ -364,8 +364,7 @@ IF(MSVC AND OpenMVG_USE_OPENCV)
       stlplus
       vlsift
       ${OpenCV_LIBS})
-  message("$OpenCV_LIBS": ${OpenCV_LIBS})
   SET_PROPERTY(TARGET openMVG_main_tianxian PROPERTY FOLDER OpenMVG/software)
   SET_PROPERTY(TARGET openMVG_main_tianxian PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
   INSTALL(TARGETS openMVG_main_tianxian DESTINATION bin/)
-ENDIF(OpenMVG_USE_OPENCV)
+ENDIF(MSVC AND OpenMVG_USE_OPENCV)
