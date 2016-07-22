@@ -50,6 +50,7 @@ using namespace openMVG::cameras;
 using namespace openMVG::geometry;
 using namespace openMVG::features;
 
+//鼠标画框的相关变量定义
 IplImage *src;
 IplImage *img;
 bool drawing = false;
@@ -61,6 +62,7 @@ string image_path = "C:\\Users\\Ethan\\Desktop\\\jiejiaotianxian\\8m\\";
 //默认情况下的图像索引参数，可以在命令行中以-a, -b的形式修改
 int firstImgId = 0;
 int secondImgId = 1;
+//获取鼠标点的位置
 void onMouse(int event, int x, int y, int flags, void *param)
 {
 	if (drawing)
@@ -116,11 +118,13 @@ void onMouse(int event, int x, int y, int flags, void *param)
 	}
 }
 
+//比较keyLine
 bool sortdes(const KeyLine &k1, const KeyLine &k2)
 {
 	return k1.lineLength > k2.lineLength;
 }
 
+//分别以XYZ, ZXY, ZYX的顺序，将旋转角重构成旋转矩阵或者由旋转矩阵分解至旋转角
 void RotationMatrixToEulerAnglesXYZ(Eigen::Matrix<double, 3, 3>  R,double* euler) {
 	//Z
 	euler[0] = atan2(-R(0, 1), R(0, 0));
@@ -238,6 +242,7 @@ Eigen::Matrix<double, 3, 3> getRotMatrixXYZ(double angleZ, double angleY, double
 	return rotationMatrix;
 }
 
+//从文件中获取名为identity的参数
 Eigen::Matrix<double, 3, 3> getMatrixFromTxt(string path, string identity)
 {
 	Eigen::Matrix<double, 3, 3> matrix;
@@ -259,6 +264,7 @@ Eigen::Matrix<double, 3, 3> getMatrixFromTxt(string path, string identity)
 	return matrix;
 }
 
+//从文件中获取三个旋转角
  double* getAngleFromTxt(string path, string identity)
 {
 	double angles[3];
@@ -276,11 +282,13 @@ Eigen::Matrix<double, 3, 3> getMatrixFromTxt(string path, string identity)
 
 	return angles;
 }
+
 // 获得 RotationMatrix
  Eigen::Matrix<double, 3, 3> getRotationMatrix(string path)
 {
 	return getMatrixFromTxt(path, "RotationMatrixFromVector:");
 }
+
 // 获得 RemappedRotationMatrix
  Eigen::Matrix<double, 3, 3> getRemappedRotationMatrix(string path)
 {
@@ -319,6 +327,7 @@ vector<string> listTxtFiles(string path)
 	return txt_files;
 }
 
+//获得一个路径下所有的jpg文件
 vector<string> listJpgFiles(string path)
 {
 	vector<string> txt_files;
@@ -350,11 +359,13 @@ vector<string> listJpgFiles(string path)
 	return txt_files;
 }
 
+//获取距离
  double getDistance(double tx, double ty, double tz, double rx, double ry, double rz) {
 	return (sqrt((tx - rx) * (tx - rx) + (ty - ry) * (ty - ry) + (tz - rz) * (tz - rz)));
 
 }
 
+ //计算俯仰角
  double getFuYang(double tx, double ty, double tz, double rx, double ry, double rz) {
 	double dis22_ = getDistance(tx, ty, tz, tx, ty, rz);
 	double dis24 = getDistance(tx, ty, tz, rx, ry, rz);
@@ -363,15 +374,8 @@ vector<string> listJpgFiles(string path)
 	cout << "俯仰角:" << fuyang << endl;
 	return fuyang;
 }
-// void getShuiPing(double tx, double ty, double tz, double rx, double ry, double rz){
-//	double dis1_3 = getDistance(tx, ty, rz, rx, ry, rz);
-//	double dis1_1__ = getDistance(tx, ty, rz, rx, ty, rz);
-//	double alpha = asin(dis1_1__ / dis1_3);
-//	double shuiping = (alpha * 360) / (2 * M_PI);
-//	cout << "水平角:" << shuiping << endl;
-//
-//}
 
+ //计算水平角
  double getShuiPing(double tx, double ty, double tz, double rx, double ry, double rz) {
 	double angle;
 	double vecX, vecY;
@@ -408,105 +412,6 @@ vector<string> listJpgFiles(string path)
 	cout << "水平角:" << angle << endl;
 	return angle;
 }
-// 获得一个路径下所有的jpg 文件
-
-cv::Mat getFundament(string image_path)
-{
-	////////////*求出两个图像之间的F的关系，求出极线，求出同名像点*/
-	//利用P 和 c 求两图之间的F
-	/////testPicture01
-	//Mat promatric1 = (Mat_<double>(3, 4) << 3359.61, 856.293, 2319.35, 464.852,
-	//	-846.7, 3568.64, 1213.34, 136.077,
-	//	-0.0675598, 0.0444401, 0.996725, -0.100325);
-	//Mat promatric2 = (Mat_<double>(3, 4) << 3012.23, 2118.43, 1959.17, 1117.13,
-	//	-1876.79, 3250.25, 915.311, -28.6339,
-	//	-0.0364896, 0.138705, 0.989661, -0.128688);
-	////第一个相机中心
-	//Mat C = (Mat_<double>(4, 1) << -0.174699, -0.111467, 0.0937833, 1.0);
-
-
-	////testPicture02
-	//Mat promatric1 = (Mat_<double>(3, 4) << 3555.77, -14.1684,   2067.54, -182.9,
-	//	53.9075,   3575.71,   1539.02, -299.02,
-	//	0.0031093, 0.0168167,  0.999854, -0.134442);
-	//Mat promatric2 = (Mat_<double>(3, 4) << 3691.34,   350.491,  1714.64,   397.699,
-	//	-89.0851,   3656.74,   1308.67, -234.847,
-	//	0.0790208, 0.0783662,  0.993788, -0.125345);
-	////第一个相机中心
-	//Mat C = (Mat_<double>(4, 1) << -0.026432,0.0263055,	0.134101, 1.0);
-
-
-	///testPicture03
-	fstream inProC(image_path + "ProjMat&C.txt", ios::in);
-
-	cv::Mat promatric1(3, 4, CV_64FC1);
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 4; j++)
-			inProC >> promatric1.at<double>(i, j);
-	}
-
-	cv::Mat promatric2(3, 4, CV_64FC1);
-	for (int i = 0; i < 3; i++)
-	{
-		for (int j = 0; j < 4; j++)
-			inProC >> promatric2.at<double>(i, j);
-	}
-	//第一个相机中心
-	cv::Mat C(4, 1, CV_64FC1);
-	for (int i = 0; i < 3; i++)
-		inProC >> C.at<double>(i, 0);
-	C.at<double>(3, 0) = 1.0;
-
-	inProC.close();
-	cout << setprecision(15) << promatric1 << endl << promatric2 << endl << C << endl;
-
-	cv::Mat ee = promatric2*C;
-	//cout << ee << endl << endl;
-	cv::Mat eInvSym = cv::Mat::zeros(3, 3, DataType<double>::type);
-	eInvSym.at<double>(0, 1) = -ee.at<double>(2);
-	eInvSym.at<double>(0, 2) = ee.at<double>(1);
-	eInvSym.at<double>(1, 0) = ee.at<double>(2);
-	eInvSym.at<double>(1, 2) = -ee.at<double>(0);
-	eInvSym.at<double>(2, 0) = -ee.at<double>(1);
-	eInvSym.at<double>(2, 1) = ee.at<double>(0);
-	//cout << eInvSym << endl << endl;
-
-	cv::Mat pro1inv = promatric1.inv(DECOMP_SVD);   //求pro的伪逆矩阵
-	cv::Mat FundamentEPP = eInvSym*promatric2*pro1inv;
-	cout << FundamentEPP << endl << endl;
-
-	/*
-	//利用点取点对，求基本矩阵
-	const int PointNum=30;
-	vector<Point2f> pointTu1(PointNum);
-	vector<Point2f> pointTu2(PointNum);
-
-	ifstream infile;
-	infile.open("E:\\天线测量\\照片\\tianxianSmall\\tuQ1.txt");
-
-	for (int i = 0; i < PointNum; i++)
-	{
-	infile >> pointTu1[i].x >> pointTu1[i].y;
-	}
-	infile.close();
-
-	infile.open("E:\\天线测量\\照片\\tianxianSmall\\tuQ2.txt");
-
-	for (int i = 0; i < PointNum; i++)
-	{
-	infile >> pointTu2[i].x >> pointTu2[i].y;
-	}
-	infile.close();
-
-	Mat FundamentalMat= findFundamentalMat(pointTu1, pointTu2, FM_RANSAC, 3, 0.99);
-	cout << FundamentalMat << endl;
-	*/
-
-
-	return FundamentEPP;
-}
-
 
 
 int main(int argc, char **argv)
@@ -673,25 +578,25 @@ int main(int argc, char **argv)
   if (sfmEngine.Process())
   {
 	  std::cout << std::endl << " Total Ac-Global-Sfm took (s): " << timer.elapsed() << std::endl;
-
 	  std::cout << "...Generating SfM_Report.html" << std::endl;
 	  Generate_SfM_Report(sfmEngine.Get_SfM_Data(),
 		  stlplus::create_filespec(sOutDir, "SfMReconstruction_Report.html"));
 
-	  //获取SFM DATA
+
+	  /*********************1、旋转转化矩阵的计算********************/
+	  //(1)获取SFM DATA
 	  SfM_Data my_sfm_data;
 	  my_sfm_data = sfmEngine.Get_SfM_Data();
 
-
-	  //旋转转化矩阵的计算
-	  //获取虚拟空间的旋转矩阵
+	  //(2)获取虚拟空间的旋转矩阵
 	  int cameraNum = my_sfm_data.poses.size();
 	  vector<Eigen::Matrix<double, 3, 3>> rotations;
 	  for (int i = 0; i < my_sfm_data.poses.size(); i++) {
 		  rotations.push_back(my_sfm_data.poses[i].rotation());
 		  cout << rotations[i] << endl;
 	  }
-	  //获取现实空间中的旋转矩阵
+
+	  //(3)获取现实空间中的旋转矩阵
 	  vector<string> txtNames;
 	  image_path = image_path + "\\";
 	  //三角测量的两个图像序号
@@ -706,12 +611,12 @@ int main(int argc, char **argv)
 		  double angleY = tempAngle[2];
 		  double angleX = -tempAngle[1];
 		  tempMat1 = getRotMatrixZXY(angleZ, angleY, angleX);
-		  tempMat2 = getRotationMatrix(txtNames[i]);
+		 // tempMat2 = getRotationMatrix(txtNames[i]);
 		  //cout << tempMat2 << endl;
 		  rotationsAndroid.push_back(tempMat1);
 	  }
 
-
+	  //(4)将手机矩阵转化为相机矩阵Remap
 	  Eigen::Matrix<double, 3, 3> rotX, rotZ;
 	  double angleX, angleZ;
 	  angleX = (180 * 2 * M_PI) / 360;
@@ -728,6 +633,8 @@ int main(int argc, char **argv)
 		  cout << "Remap:" << rotationsAndroid[i] << endl << endl;
 
 	  }
+
+	  //(5)计算旋转转化矩阵，XYZ, ZXY, ZYX三种分解方式都计算，最后选取了XYZ的方式
 	  cout << "从虚拟空间旋转至现实空间的旋转矩阵:" << endl;
 	  double eulerT[3];
 	  double eulerTotal[3] = { 0.0, 0.0, 0.0 };
@@ -755,6 +662,9 @@ int main(int argc, char **argv)
 		  eulerVector.push_back(eulerT[1]);
 		  eulerVector.push_back(eulerT[2]);
 	  }
+
+	  //(6)将旋转矩阵分解成旋转角时，可能分解出+179和-179，这两个量数值差异较大，
+	  //但是角度上是很接近，所以需要判定并归一化，都化为同一个符号
 	  //判定是否存在180左右的数值,当一个数值存在大于175，需要检测
 	  if (abs(eulerVector[0]) >175) {
 		  int negativeNum = 0;
@@ -768,9 +678,7 @@ int main(int argc, char **argv)
 			  }
 		  }
 		  if ((positiveNum != eulerVector.size() / 3) || (negativeNum != eulerVector.size() / 3)) {
-			  //有数据需要取反
-			  /*cout << endl <<"positiveNum"<< positiveNum << endl;
-			  cout << endl << "negativeNum" << positiveNum << endl;*/
+			 
 			  if (positiveNum >= negativeNum) {
 				  for (unsigned int i = 0; i < eulerVector.size() / 3; i++) {
 					  eulerVector[i * 3] = abs(eulerVector[i * 3]);
@@ -797,9 +705,6 @@ int main(int argc, char **argv)
 			  }
 		  }
 		  if ((positiveNum != eulerVector.size() / 3) || (negativeNum != eulerVector.size() / 3)) {
-			  //有数据需要取反
-			  /*cout << endl <<"positiveNum"<< positiveNum << endl;
-			  cout << endl << "negativeNum" << positiveNum << endl;*/
 			  if (positiveNum >= negativeNum) {
 				  for (unsigned int i = 0; i < eulerVector.size() / 3; i++) {
 					  eulerVector[i * 3 + 1] = abs(eulerVector[i * 3 + 1]);
@@ -826,9 +731,6 @@ int main(int argc, char **argv)
 			  }
 		  }
 		  if ((positiveNum != eulerVector.size() / 3) || (negativeNum != eulerVector.size() / 3)) {
-			  //有数据需要取反
-			  /*cout << endl <<"positiveNum"<< positiveNum << endl;
-			  cout << endl << "negativeNum" << positiveNum << endl;*/
 			  if (positiveNum >= negativeNum) {
 				  for (unsigned int i = 0; i < eulerVector.size() / 3; i++) {
 					  eulerVector[i * 3 + 2] = abs(eulerVector[i * 3 + 2]);
@@ -843,6 +745,7 @@ int main(int argc, char **argv)
 
 	  }
 
+	  //(7)将旋转转化矩阵分解出的三个旋转角求平均值，并重构成最优的旋转矩阵
 	  for (unsigned int i = 0; i < eulerVector.size() / 3; i++) {
 		  eulerTotal[0] += eulerVector[i * 3];
 		  eulerTotal[1] += eulerVector[i * 3 + 1];
@@ -854,7 +757,8 @@ int main(int argc, char **argv)
 	  eulerTotal[2] = eulerTotal[2] / (eulerVector.size() / 3);
 	  Eigen::Matrix<double, 3, 3> finalrt;
 	  finalrt = getRotMatrixZYX(eulerTotal[0], eulerTotal[1], eulerTotal[2]);
-	  //计算均方值
+	  
+	  //(8)计算均方值
 	  double RSME = 0.0;
 	  for (unsigned int i = 0; i < eulerVector.size() / 3; i++) {
 		  RSME += sqrt((eulerTotal[0] - eulerVector[i * 3 + 0])*(eulerTotal[0] - eulerVector[i * 3 + 0])) +
@@ -867,7 +771,7 @@ int main(int argc, char **argv)
 	  cout << "RSME: " << RSME << endl;
 	  cout << "Average RSME:" << RSME / eulerVector.size() << endl;
 
-	  //创建TXT目录
+	  //(9)创建TXT目录并存储信息
 	  string txtPath = image_path + "txtFiles";
 	  mkdir(txtPath.c_str());
 	  fstream tr0(txtPath + "\\transformRot.txt", ios::out);
@@ -878,11 +782,11 @@ int main(int argc, char **argv)
 	  tr0 << "final_rt:" << finalrt << endl;
 	  tr0.close();
 
-	  //通过直线提取与极限约束获取顶点对以进行三角测量
+	  /*********2、通过直线提取与极限约束获取顶点对以进行三角测量****************/
 
 	  Triangulation trianObj;
 
-	  //获取view，包含了图像，内参，外参
+	  //(1)获取虚拟空间中第一张图像的view，包含了图像，内参，外参
 	  View *view = my_sfm_data.views.at(firstImgId).get();
 	  //获取内外参
 	  IntrinsicBase * cam = my_sfm_data.GetIntrinsics().at(view->id_intrinsic).get();
@@ -890,21 +794,15 @@ int main(int argc, char **argv)
 	  Pose3 pose = my_sfm_data.GetPoseOrDie(view);
 
 
-	  //同理获取view，加入trianObj
+	  //同理获取第二张图像的view2
 	  View *view2 = my_sfm_data.views.at(secondImgId).get();
 	  //获取内外参
 	  IntrinsicBase * cam2 = my_sfm_data.GetIntrinsics().at(view2->id_intrinsic).get();
 	  Pose3 pose2 = my_sfm_data.GetPoseOrDie(view2);
 
-	  /*fstream outProj(image_path + "ProjMat&C.txt", ios::out);
-	  outProj << setprecision(15) << (cam->get_projective_equivalent(pose)) << endl;
-	  outProj << setprecision(15) << (cam2->get_projective_equivalent(pose2)) << endl;
-	  outProj << setprecision(15) << pose.center();
-	  outProj.close();
-
-	  cv::Mat myFundamentEPP = getFundament(image_path);
-	  cout << endl << "Fundamental Matrix:" << myFundamentEPP << endl;*/
-
+	  
+	  //(2)打开图像并由用户框选天线区域
+	  //第一张图像
 	  vector<string> jpgNames;
 	  jpgNames = listJpgFiles(image_path);
 	  string img1 = jpgNames[firstImgId];
@@ -924,7 +822,7 @@ int main(int argc, char **argv)
 
 
 
-	  //****第二幅图像
+	  //第二张图像
 	  string img2 = jpgNames[secondImgId];
 	  src = cvLoadImage(img2.c_str());
 	  if (!src) {
@@ -941,11 +839,10 @@ int main(int argc, char **argv)
 	  cvReleaseImage(&img);
 	  cvDestroyAllWindows();
 
-
-
 	  cout << pointOne << endl;
 	  cout << pointTwo << endl;
 
+	  //保存图像
 	  String image_path1 = image_path + "matches\\picSmall01.jpg"; //parser.get<String>( 0 );
 	  String image_path2 = image_path + "matches\\picSmall02.jpg"; //parser.get<String>( 1 );
 	  if (image_path1.empty() || image_path2.empty())
@@ -954,7 +851,7 @@ int main(int argc, char **argv)
 		  return -1;
 	  }
 
-	  /* load image */
+	  //(3)从路径中读取框选后的小图像，以进行直线提取
 	  cv::Mat imageMat1 = imread(image_path1, 1);
 	  cv::Mat imageMat2 = imread(image_path2, 1);
 
@@ -963,6 +860,7 @@ int main(int argc, char **argv)
 		  cout << "Error, images could not be loaded. Please, check their path" << endl;
 	  }
 
+	  //直线提取
 	  /* create binary masks */
 	  cv::Mat mask1 = cv::Mat::ones(imageMat1.size(), CV_8UC1);
 	  cv::Mat mask2 = cv::Mat::ones(imageMat2.size(), CV_8UC1);
@@ -977,24 +875,14 @@ int main(int argc, char **argv)
 	  (*bd)(imageMat1, mask1, keylines1, descr1, false, false);
 	  (*bd)(imageMat2, mask2, keylines2, descr2, false, false);
 
-	  //cout << "**"<<keylines1.size() << endl;
-	  //cout <<"**"<< keylines2.size() << endl;
-
-
-
-	  ////////////*求出两个图像之间的F的关系，求出极线，求出同名像点*/
-	  //cv::Mat FundamentEPP = getFundament(image_path);
-
-
+	  //(4)计算两张图像的基础矩阵
+	  //第一种方法，通过两个相机的内外参进行计算
 	  Eigen::Matrix<double, 3, 4> proj1, proj2;
 	  Vec3 c;
 	  proj1 = cam->get_projective_equivalent(pose);
 	  proj2 = cam2->get_projective_equivalent(pose2);
 	  c = my_sfm_data.poses[firstImgId].center();
-	  //cout << proj1<<endl;
-	  //cout << proj2<<endl;
-	  //cout << c << endl;
-	  //投影矩阵
+
 	  cv::Mat promatric1(3, 4, CV_64FC1);
 	  cv::Mat promatric2(3, 4, CV_64FC1);
 	  for (int i = 0; i < 3; i++)
@@ -1010,12 +898,9 @@ int main(int argc, char **argv)
 		  C.at<double>(i, 0) = c(i, 0);
 	  }
 	  C.at<double>(3, 0) = 1.0;
-	  //cout << promatric1 << endl;
-	  //cout << promatric2 << endl;
-	  //cout << C << endl;
 
 	  cv::Mat ee = promatric2*C;
-	  //cout << ee << endl << endl;
+	  
 	  cv::Mat eInvSym = cv::Mat::zeros(3, 3, DataType<double>::type);
 	  eInvSym.at<double>(0, 1) = -ee.at<double>(2);
 	  eInvSym.at<double>(0, 2) = ee.at<double>(1);
@@ -1023,12 +908,11 @@ int main(int argc, char **argv)
 	  eInvSym.at<double>(1, 2) = -ee.at<double>(0);
 	  eInvSym.at<double>(2, 0) = -ee.at<double>(1);
 	  eInvSym.at<double>(2, 1) = ee.at<double>(0);
-	  //cout << eInvSym << endl << endl;
-
+	  
 	  cv::Mat pro1inv = promatric1.inv(DECOMP_SVD);   //求pro的伪逆矩阵
 	  cv::Mat FundamentEPP = eInvSym*promatric2*pro1inv;
-	  //cout << FundamentEPP << endl << endl;
 
+	  //第二种方法，通过调用OPENMVG的接口进行计算
 	  Eigen::Matrix<double, 3, 3> Fundament = F_from_P(cam->get_projective_equivalent(pose), cam->get_projective_equivalent(pose2));
 	  cv::Mat FundamentFuc(3, 3, CV_64FC1);
 	  for (int i = 0; i < 3; i++)
@@ -1037,7 +921,7 @@ int main(int argc, char **argv)
 			  FundamentFuc.at<double>(i, j) = Fundament(i, j);
 		  }
 	  }
-
+	  //输出并比较两种方法的计算结果
 	  cout << "@@@@@@@@@@" << endl;
 	  cout << FundamentEPP << endl << FundamentFuc << endl << endl;
 	  double rular = FundamentEPP.at<double>(0, 0) / FundamentFuc.at<double>(0, 0);
@@ -1049,9 +933,8 @@ int main(int argc, char **argv)
 	  }
 	  cout << endl << endl;
 
+	  //(5)在两张小图像中，由用户输入图像对
 	  cout << "分别输入图像1与图像2中对应的两个线段编号:";
-
-
 	  ///////*选择所需线并显示*/
 	  sort(keylines1.begin(), keylines1.end(), sortdes);
 	  int limitMax = 10 < keylines1.size() ? 10 : keylines1.size();
@@ -1087,7 +970,6 @@ int main(int argc, char **argv)
 	  
 	  fstream out(txtPath + "\\point.txt", ios::out);
 	  vector<Point2f> point1;
-	  //char aa;
 	  while (std::cin >> lineIdx1)
 	  {
 		  if (lineIdx1 == -1)
@@ -1096,8 +978,8 @@ int main(int argc, char **argv)
 		  //lineIdx2[lineTp + 1] = lineIdx2[lineTp];
 		  //lineTp += 2;
 
-		  point1.push_back(cvPoint(keylines1[lineIdx1].startPointX + pointOne.x, keylines1[lineIdx1].startPointY + pointOne.y));
-		  point1.push_back(cvPoint(keylines1[lineIdx1].endPointX + pointOne.x, keylines1[lineIdx1].endPointY + pointOne.y));
+		  point1.push_back(Point2f(keylines1[lineIdx1].startPointX + pointOne.x, keylines1[lineIdx1].startPointY + pointOne.y));
+		  point1.push_back(Point2f(keylines1[lineIdx1].endPointX + pointOne.x, keylines1[lineIdx1].endPointY + pointOne.y));
 		  cout << setprecision(15) << "##" << showpoint << keylines1[lineIdx1].startPointX + pointOne.x << " " << keylines1[lineIdx1].startPointY + pointOne.y << endl;
 		  cout << setprecision(15) << "##" << showpoint << keylines1[lineIdx1].endPointX + pointOne.x << " " << keylines1[lineIdx1].endPointY + pointOne.y << endl;
 
@@ -1112,7 +994,7 @@ int main(int argc, char **argv)
 
 	  destroyAllWindows();
 
-	  //设置极线图像的路径与图像名称，保留每次计算的极限图像
+	  //(6)设置极线图像的路径与图像名称，保留每次计算的极线图像
 	  //创建路径
 	  string epipolarImgPath = image_path + "epipolarImg";
 	  mkdir(epipolarImgPath.c_str());
@@ -1126,7 +1008,7 @@ int main(int argc, char **argv)
 	  epiImg2Path[22] = secondImgId + '0';
 	  epiImg2Path = image_path + epiImg2Path;
 
-	  //画图像1中的两点
+	  //(7)画图像1中的两点
 	  cv::Mat imageMat4 = imread(img1, 1);
 	  for (int ii = 0; ii < point1.size(); ii++)
 	  {
@@ -1137,13 +1019,36 @@ int main(int argc, char **argv)
 	  imwrite(epiImg1Path, imageMat4);
 
 
-	  //cout << point1 << endl;
-	  //计算极线
+	  //(8)计算极线
 	  vector<cv::Vec3f> corresEpilines;
-	  //computeCorrespondEpilines(point1, 1, FundamentEPP, corresEpilines);
-	  computeCorrespondEpilines(point1, 1, FundamentFuc, corresEpilines);
 
-	  //画图2中的两点对应的两条极线
+	  for (int i = 0; i < point1.size(); i++) {
+		  Vec2 tmp(point1[i].x, point1[i].y);
+		  tmp = cam->get_ud_pixel(tmp);
+		  Point2f tmp2(tmp.x(), tmp.y());
+		  point1[i] = tmp2;
+	  }
+
+	  //采用OPENCV的函数计算极线
+	  computeCorrespondEpilines(point1, 1, FundamentFuc, corresEpilines);
+	  
+	  //另一种计算极线的方法，不使用OPENCV的函数
+	  //Mat3 FF;
+	  ////把cv：：mat 转化为Eigen
+	  //for (int i = 0; i < 3; i++)
+	  //{
+		 // for (int j = 0; j < 3; j++)
+			//  FF(i, j) = FundamentEPP.at<double>(i, j);
+	  //}
+	  //for (int i = 0; i < point1.size(); i++)
+	  //{
+		 // const Vec2 l_pt = cam->get_ud_pixel(points_1[i]);
+		 // const Vec3 line = FF * Vec3(l_pt(0), l_pt(1), 1.);
+		 // cv::Vec3f coline(line(0), line(1), line(2));
+		 // corresEpilines.push_back(coline);
+	  //}
+
+	  //(9)画图2中的两点对应的两条极线并计算极线与直线的交点
 	  cv::Mat imageMat3 = imread(img2, 1);
 	  lineTp = 0;
 	  for (vector<cv::Vec3f>::const_iterator it = corresEpilines.begin(); it != corresEpilines.end(); ++it)
@@ -1160,13 +1065,13 @@ int main(int argc, char **argv)
 		  float a2 = keylines2[idx2].endPointY - keylines2[idx2].startPointY;    //y2-y1
 		  float b2 = keylines2[idx2].startPointX - keylines2[idx2].endPointX;    //x1-x2
 		  float c2 = (keylines2[idx2].endPointX + pointTwo.x)*(keylines2[idx2].startPointY + pointTwo.y) - (keylines2[idx2].startPointX + pointTwo.x)*(keylines2[idx2].endPointY + pointTwo.y);    //x2y1-x1y2
-
-																																																   //画出竖直线
+																																													   //画出竖直线
 		  if (lineTp % 2 == 0)
 		  {
 			  line(imageMat3, Point(0.0, -c2 / b2), Point(imageMat3.cols, -(c2 + a2 * imageMat3.cols) / b2), Scalar(255, 0, 0), 0.5);
 		  }
 
+		  //计算交点
 		  Point2d ans;
 		  ans.x = (b1*c2 - b2*c1) / (a1*b2 - a2*b1);
 		  ans.y = (a2*c1 - a1*c2) / (a1*b2 - a2*b1);
@@ -1178,18 +1083,20 @@ int main(int argc, char **argv)
 	  }
 	  imwrite(epiImg2Path, imageMat3);
 
+
+
+	  /**************3、通过顶点对进行三角测量，并计算姿态角**************/
+	  //(1)三角测量
 	  std::vector<Vec3> points3D;
 	  Vec3 Xtemp;
 	  for (int i = 0; i < points_1.size(); i++) {
 		  cout << "first camera's undistorted pixel coordinate:" << endl << cam->get_ud_pixel(points_1[i]) << endl;
 		  cout << "second camera's undistorted pixel coordinate:" << endl << cam2->get_ud_pixel(points_2[i]) << endl;
 
-		  //cout << "@@@@@@@@@@@@@@@@@@" << endl;
 		  trianObj.add(cam->get_projective_equivalent(pose), cam->get_ud_pixel(points_1[i]));
 		  trianObj.add(cam2->get_projective_equivalent(pose2), cam2->get_ud_pixel(points_2[i]));
-		  //trianObj.add(cam->get_projective_equivalent(pose), points_1[i]);
-		  //trianObj.add(cam2->get_projective_equivalent(pose2), points_2[i]);
 		  Xtemp = trianObj.compute();
+		  //使用旋转转化矩阵，对三角测量后的顶点进行旋转转化，而不是对所有顶点、相机进行转化
 		  Xtemp = finalrt*Xtemp;
 		  points3D.push_back(Xtemp);
 		  trianObj.clear();
@@ -1200,7 +1107,8 @@ int main(int argc, char **argv)
 		  outPoints << points3D[i].x() << " " << points3D[i].y() << " " << points3D[i].z() << " " << 255 << " " << 0 << " " << 0 << endl;
 	  }
 	  outPoints.close();
-	  //计算姿态角
+
+	  //(2)计算姿态角
 	  string anglePath = image_path + "angle";
 	  mkdir(anglePath.c_str());
 	  string angle = "angle\\angle00.txt";
@@ -1214,26 +1122,21 @@ int main(int argc, char **argv)
 	  }
 	  outAngle.close();
 
+	  //使用旋转转化矩阵，对所有其他点云进行旋转，因为要看到最后旋转后的点云姿态，在整个计算过程中，这一步是可选项
 	  for (Landmarks::iterator iterL = my_sfm_data.structure.begin();
 		  iterL != my_sfm_data.structure.end(); ++iterL)
 	  {
-		  // iterL->second.X = iterL->second.X - firstVec;
 		  iterL->second.X = finalrt*(iterL->second.X);
-		  //iterL->second.X.z() = -iterL->second.X.z();
-		  //iterL->second.X.x() = -iterL->second.X.x();
 	  }
 
 	  for (Poses::iterator iterP = my_sfm_data.poses.begin();
 		  iterP != my_sfm_data.poses.end(); ++iterP)
 	  {
 		  geometry::Pose3 & pose = iterP->second;
-		  //pose = sim(pose);
-		  //iterP->second.center().x() = -iterP->second.center().x();
-		  //iterP->second.center().z() = -iterP->second.center().z();
-		  // iterP->second.center() = iterP->second.center() - firstVec;
 		  iterP->second.center() = finalrt*iterP->second.center();
 	  }  
 	  getchar();
+
 	  //-- Export to disk computed scene (data & visualizable results)
 	  std::cout << "...Export SfM_Data to disk." << std::endl;
 	  Save(my_sfm_data,
