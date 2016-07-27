@@ -57,13 +57,14 @@ void getAngleFromTxt(double* angles, std::string& path, std::string& identity) {
   std::ifstream fin(path, std::ios::in);
   std::string line;
   while (fin >> line) {
-    if (line == identity)
+    if (line == identity) {
       for (int i = 0; i < 3; i++) {
         fin >> angles[i];
-      }
-    fin.close();
-    return;
-  }
+      }//for
+      fin.close();
+      return;
+    }//if
+  }//while
 }
 
 // 获得 RotationMatrix
@@ -100,60 +101,6 @@ void getRemappedRotationMatrix(Eigen::Matrix<double, 3, 3>& R, std::string& path
   }//while
 }
 
-// 获得一个路径下所有的 txt 文件
-std::vector<std::string> listTxtFiles(std::string& path) {
-  std::vector<std::string> txt_files;
-
-  intptr_t  hFile = 0;
-  struct _finddata_t fileInfo;
-  std::string pathName, exdName;
-  const char* p = pathName.assign(path).append("\\*").c_str();
-  if ((hFile = _findfirst(p, &fileInfo)) == -1) {
-    return txt_files;
-  }
-  do {
-    const std::string fileName(fileInfo.name);
-    if (fileName.length() > 3) {
-      const std::string extension = fileName.substr(fileName.length() - 3, 3);
-      if (extension == "txt") {
-        txt_files.push_back(path + fileName);
-      }
-    }
-  } while (_findnext(hFile, &fileInfo) == 0);
-
-  _findclose(hFile);
-
-  return txt_files;
-}
-
-//获得一个路径下所有的jpg文件
-std::vector<std::string> listJpgFiles(std::string& path) {
-  std::vector<std::string> txt_files;
-
-  intptr_t  hFile = 0;
-  struct _finddata_t fileInfo;
-  std::string pathName, exdName;
-
-  if ((hFile = _findfirst(pathName.assign(path).append("\\*").c_str(), &fileInfo)) == -1) {
-    return txt_files;
-  }
-  do {
-    const std::string fileName(fileInfo.name);
-    if (fileName.length() > 3) {
-      const std::string extension = fileName.substr(fileName.length() - 3, 3);
-      if (extension == "jpg") {
-        txt_files.push_back(path + fileName);
-      }
-    }
-
-    //	cout << fileInfo.name << (fileInfo.attrib&_A_SUBDIR ? "[folder]" : "[file]") << endl;
-  } while (_findnext(hFile, &fileInfo) == 0);
-
-  _findclose(hFile);
-
-  return txt_files;
-}
-
 //获取距离
 double getDistance(double tx, double ty, double tz, double rx, double ry, double rz) {
   return (sqrt((tx - rx) * (tx - rx) + (ty - ry) * (ty - ry) + (tz - rz) * (tz - rz)));
@@ -175,10 +122,10 @@ double getShuiPing(double tx, double ty, double tz, double rx, double ry, double
     vecY = ty - ry;
     if (rx <= tx) {
       //t在r的右边，终点在始点的右边
-      angle = acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY)))* 180.0 / M_PI;
+      angle = (acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY))))* 180.0 / M_PI;
     } else {
       //t在r的左边，终点在始点的左边
-      angle = 2 * M_PI - acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY)))* 180.0 / M_PI;
+      angle = (2 * M_PI - acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY))))* 180.0 / M_PI;
     }
     return angle;
   }
@@ -188,10 +135,10 @@ double getShuiPing(double tx, double ty, double tz, double rx, double ry, double
   vecY = ry - ty;
   if (tx <= rx) {
     //r在t的右边，终点在始点的右边
-    angle = acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY)))* 180.0 / M_PI;
+    angle = (acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY))))* 180.0 / M_PI;
   } else {
     //r在t的左边，终点在始点的左边
-    angle = 2 * M_PI - acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY)))* 180.0 / M_PI;
+    angle = (2 * M_PI - acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY))))* 180.0 / M_PI;
   }
   return angle;
 }
