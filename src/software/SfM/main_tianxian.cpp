@@ -1,11 +1,9 @@
-
-// Copyright (c) 2012, 2013, 2014 Pierre MOULON.
+ï»¿// Copyright (c) 2012, 2013, 2014 Pierre MOULON.
 
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#include "tx.h"
 #include "third_party\cmdLine\cmdLine.h"
 #include "openMVG\cameras\cameras.hpp"
 #include "openMVG\sfm\sfm.hpp"
@@ -26,64 +24,18 @@
 #include <fstream>
 #include <vector>
 
+#include "tx.h"
+#include "capture.h"
+#ifdef __linux__
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<unistd.h>
+#define mkdir(x) mkdir(x,0777)
+#endif // __linux__
+
 #define MATCHES_DIST_THRESHOLD 25
 
 using namespace openMVG::sfm;
-//Êó±ê»­¿òµÄÏà¹Ø±äÁ¿¶¨Òå
-IplImage *src;
-IplImage *img;
-bool drawing = false;
-CvRect rect;
-CvPoint origin;
-bool istuNumOne = true;
-string image_path = "";
-//Ä¬ÈÏÇé¿öÏÂµÄÍ¼ÏñË÷Òı²ÎÊı£¬¿ÉÒÔÔÚÃüÁîĞĞÖĞÒÔ-a, -bµÄĞÎÊ½ĞŞ¸Ä
-int firstImgId = 0;
-int secondImgId = 1;
-//»ñÈ¡Êó±êµãµÄÎ»ÖÃ
-void onMouse(int event, int x, int y, int flags, void *param) {
-  if (drawing) {
-    rect.x = MIN(origin.x, x);
-    rect.y = MIN(origin.y, y);
-    rect.width = abs(origin.x - x);
-    rect.height = abs(origin.y - y);
-  }
-
-  if (event == CV_EVENT_LBUTTONDOWN && !CV_EVENT_MOUSEMOVE) {
-    drawing = true;
-    origin = cvPoint(x, y);
-    rect = cvRect(x, y, 0, 0);
-  } else if (event == CV_EVENT_LBUTTONUP) {
-    drawing = false;
-    if (rect.height == 0 || rect.width == 0) {
-      //cvDestroyWindow("ScreenShot");
-      return;
-    }
-    img = cvCreateImage(cvSize(rect.width, rect.height), src->depth, src->nChannels);
-    cout << rect.x << " " << rect.y << " " << rect.height << " " << rect.width << endl;
-    cvSetImageROI(src, rect);
-    cvCopy(src, img, 0);
-    cvResetImageROI(src);
-
-    if (istuNumOne) {
-      string filename1 = image_path + "matches\\picSmall01.jpg";
-      const char * file1 = filename1.c_str();
-      cvSaveImage(file1, img);
-      istuNumOne = false;
-    } else {
-      string filename2 = image_path + "matches\\picSmall02.jpg";
-      const char *file2 = filename2.c_str();
-      cvSaveImage(file2, img);
-      istuNumOne = true;
-    }
-    return;
-  }
-}
-
-//±È½ÏkeyLine
-bool sortdes(const cv::line_descriptor::KeyLine &k1, const cv::line_descriptor::KeyLine &k2) {
-  return k1.lineLength > k2.lineLength;
-}
 
 int main(int argc, char **argv) {
   using namespace std;
@@ -105,6 +57,7 @@ int main(int argc, char **argv) {
   int iRotationAveragingMethod = int(ROTATION_AVERAGING_L2);
   int iTranslationAveragingMethod = int(TRANSLATION_AVERAGING_SOFTL1);
   std::string sIntrinsic_refinement_options = "ADJUST_ALL";
+  int firstImgId = 0, secondImgId = 1;
 
   cmd.add(make_option('i', sSfM_Data_Filename, "input_file"));
   cmd.add(make_option('m', sMatchesDir, "matchdir"));
@@ -112,10 +65,10 @@ int main(int argc, char **argv) {
   cmd.add(make_option('r', iRotationAveragingMethod, "rotationAveraging"));
   cmd.add(make_option('t', iTranslationAveragingMethod, "translationAveraging"));
   cmd.add(make_option('f', sIntrinsic_refinement_options, "refineIntrinsics"));
-  //µÚÒ»ÕÅÍ¼ÏñµÄË÷ÒıºÅÒÔ-a±íÊ¾£¬µÚ¶şÕÅÍ¼ÏñµÄË÷ÒıºÅÒÔ-b±íÊ¾
+  //ç¬¬ä¸€å¼ å›¾åƒçš„ç´¢å¼•å·ä»¥-aè¡¨ç¤ºï¼Œç¬¬äºŒå¼ å›¾åƒçš„ç´¢å¼•å·ä»¥-bè¡¨ç¤º
   cmd.add(make_option('a', firstImgId, "imgIndex 0"));
   cmd.add(make_option('b', secondImgId, "imgIndex 1"));
-  //Í¼ÏñÓëtxtËùÔÚµÄÎÄ¼ş¼Ğ
+  //å›¾åƒä¸txtæ‰€åœ¨çš„æ–‡ä»¶å¤¹
   try {
     if (argc == 1) throw std::string("Invalid parameter.");
     cmd.process(argc, argv);
@@ -243,17 +196,16 @@ int main(int argc, char **argv) {
       stlplus::create_filespec(sOutDir, "SfMReconstruction_Report.html"));
 
 
-    /*********************1¡¢Ğı×ª×ª»¯¾ØÕóµÄ¼ÆËã********************/
-    //(1)»ñÈ¡SFM DATA
+    /*********************1ã€æ—‹è½¬è½¬åŒ–çŸ©é˜µçš„è®¡ç®—********************/
+    //(1)è·å–SFM DATA
     SfM_Data my_sfm_data = sfmEngine.Get_SfM_Data();
-    image_path = my_sfm_data.s_root_path + "\\..\\";
 
-    //(2)»ñÈ¡ĞéÄâ¿Õ¼äµÄĞı×ª¾ØÕó
+    //(2)è·å–è™šæ‹Ÿç©ºé—´çš„æ—‹è½¬çŸ©é˜µ
     size_t cameraNum = my_sfm_data.poses.size();
     vector<Eigen::Matrix<double, 3, 3>> rotations;
 
-    //(3)»ñÈ¡ÏÖÊµ¿Õ¼äÖĞµÄĞı×ª¾ØÕó
-    //(4)½«ÊÖ»ú¾ØÕó×ª»¯ÎªÏà»ú¾ØÕóRemap
+    //(3)è·å–ç°å®ç©ºé—´ä¸­çš„æ—‹è½¬çŸ©é˜µ
+    //(4)å°†æ‰‹æœºçŸ©é˜µè½¬åŒ–ä¸ºç›¸æœºçŸ©é˜µRemap
     vector<Eigen::Matrix<double, 3, 3>> rotationsAndroid;
     Eigen::Matrix<double, 3, 3> rotXZ;
     rotXZ << 0, 1, 0, 1, 0, 0, 0, 0, -1;
@@ -262,12 +214,16 @@ int main(int argc, char **argv) {
       Eigen::Matrix<double, 3, 3> tempMat1;
       double tempAngle[3] = { 0.0 };
       rotations.push_back(my_sfm_data.poses[i].rotation().inverse());
-      getAngleFromTxt(tempAngle, my_sfm_data.s_root_path + "\\" + views.at(i)->s_Img_path + ".txt", string("Orientation_NEW_API:"));
+      string filename = my_sfm_data.s_root_path + "/";
+      filename = filename + views.at(i)->s_Img_path;
+      filename = filename + ".txt";
+      string id = "Orientation_NEW_API:";
+      getAngleFromTxt(tempAngle, filename, id);
       getRotMatrixZXY(tempMat1, -tempAngle[0], tempAngle[2], -tempAngle[1]);
       rotationsAndroid.push_back(tempMat1 * rotXZ);
     }
-    //(5)¼ÆËãĞı×ª×ª»¯¾ØÕó£¬XYZ, ZXY, ZYXÈıÖÖ·Ö½â·½Ê½¶¼¼ÆËã£¬×îºóÑ¡È¡ÁËXYZµÄ·½Ê½
-    cout << "´ÓĞéÄâ¿Õ¼äĞı×ªÖÁÏÖÊµ¿Õ¼äµÄĞı×ª¾ØÕó:" << endl;
+    //(5)è®¡ç®—æ—‹è½¬è½¬åŒ–çŸ©é˜µï¼ŒXYZ, ZXY, ZYXä¸‰ç§åˆ†è§£æ–¹å¼éƒ½è®¡ç®—ï¼Œæœ€åé€‰å–äº†XYZçš„æ–¹å¼
+    cout << "ä»è™šæ‹Ÿç©ºé—´æ—‹è½¬è‡³ç°å®ç©ºé—´çš„æ—‹è½¬çŸ©é˜µ:" << endl;
     std::vector<double> eulerVector;
     std::vector<Eigen::Matrix<double, 3, 3>> rt(cameraNum);
 
@@ -281,9 +237,9 @@ int main(int argc, char **argv) {
       eulerVector.push_back(eulerT[2]);
     }
 
-    //(6)½«Ğı×ª¾ØÕó·Ö½â³ÉĞı×ª½ÇÊ±£¬¿ÉÄÜ·Ö½â³ö+179ºÍ-179£¬ÕâÁ½¸öÁ¿ÊıÖµ²îÒì½Ï´ó£¬
-    //µ«ÊÇ½Ç¶ÈÉÏÊÇºÜ½Ó½ü£¬ËùÒÔĞèÒªÅĞ¶¨²¢¹éÒ»»¯£¬¶¼»¯ÎªÍ¬Ò»¸ö·ûºÅ
-    //ÅĞ¶¨ÊÇ·ñ´æÔÚ180×óÓÒµÄÊıÖµ,µ±Ò»¸öÊıÖµ´æÔÚ´óÓÚ175£¬ĞèÒª¼ì²â
+    //(6)å°†æ—‹è½¬çŸ©é˜µåˆ†è§£æˆæ—‹è½¬è§’æ—¶ï¼Œå¯èƒ½åˆ†è§£å‡º+179å’Œ-179ï¼Œè¿™ä¸¤ä¸ªé‡æ•°å€¼å·®å¼‚è¾ƒå¤§ï¼Œ
+    //ä½†æ˜¯è§’åº¦ä¸Šæ˜¯å¾ˆæ¥è¿‘ï¼Œæ‰€ä»¥éœ€è¦åˆ¤å®šå¹¶å½’ä¸€åŒ–ï¼Œéƒ½åŒ–ä¸ºåŒä¸€ä¸ªç¬¦å·
+    //åˆ¤å®šæ˜¯å¦å­˜åœ¨180å·¦å³çš„æ•°å€¼,å½“ä¸€ä¸ªæ•°å€¼å­˜åœ¨å¤§äº175ï¼Œéœ€è¦æ£€æµ‹
     int size_of_eulerVector = cameraNum * 3;
     for (int j = 0; j < 3; j++) {
       if (abs(eulerVector[j]) > 175) {
@@ -303,7 +259,7 @@ int main(int argc, char **argv) {
           }
       }
     }
-    //(7)½«Ğı×ª×ª»¯¾ØÕó·Ö½â³öµÄÈı¸öĞı×ª½ÇÇóÆ½¾ùÖµ£¬²¢ÖØ¹¹³É×îÓÅµÄĞı×ª¾ØÕó
+    //(7)å°†æ—‹è½¬è½¬åŒ–çŸ©é˜µåˆ†è§£å‡ºçš„ä¸‰ä¸ªæ—‹è½¬è§’æ±‚å¹³å‡å€¼ï¼Œå¹¶é‡æ„æˆæœ€ä¼˜çš„æ—‹è½¬çŸ©é˜µ
     double eulerTotal[3] = { 0.0, 0.0, 0.0 };
     for (int i = 0; i < size_of_eulerVector; i += 3) {
       eulerTotal[0] += eulerVector[i];
@@ -316,7 +272,7 @@ int main(int argc, char **argv) {
     Eigen::Matrix<double, 3, 3> finalrt;
     getRotMatrixZYX(finalrt, eulerTotal[0], eulerTotal[1], eulerTotal[2]);
 
-    //(8)¼ÆËã¾ù·½Öµ
+    //(8)è®¡ç®—å‡æ–¹å€¼
     double RSME = 0.0;
     for (int i = 0; i < eulerVector.size(); i += 3) {
       RSME += (abs(eulerTotal[0] - eulerVector[i]) + abs(eulerTotal[1] - eulerVector[i + 1])
@@ -328,10 +284,10 @@ int main(int argc, char **argv) {
     cout << "RSME: " << RSME << endl;
     cout << "Average RSME:" << RSME / eulerVector.size() << endl;
 
-    //(9)´´½¨TXTÄ¿Â¼²¢´æ´¢ĞÅÏ¢
-    string txtPath = my_sfm_data.s_root_path + "\\..\\" + "txtFiles";
+    //(9)åˆ›å»ºTXTç›®å½•å¹¶å­˜å‚¨ä¿¡æ¯
+    string txtPath = my_sfm_data.s_root_path + "/../" + "txtFiles";
     mkdir(txtPath.c_str());
-    fstream tr0(txtPath + "\\transformRot.txt", ios::out);
+    fstream tr0(txtPath + "/transformRot.txt", ios::out);
     for (int i = 0; i < cameraNum; i++) {
       tr0 << "rt" << i << endl << rt[i] << endl;
     }
@@ -339,82 +295,107 @@ int main(int argc, char **argv) {
     tr0 << "final_rt:" << finalrt << endl;
     tr0.close();
 
-    /*********2¡¢Í¨¹ıÖ±ÏßÌáÈ¡Óë¼«ÏŞÔ¼Êø»ñÈ¡¶¥µã¶ÔÒÔ½øĞĞÈı½Ç²âÁ¿****************/
+    /*********2ã€é€šè¿‡ç›´çº¿æå–ä¸æé™çº¦æŸè·å–é¡¶ç‚¹å¯¹ä»¥è¿›è¡Œä¸‰è§’æµ‹é‡****************/
     openMVG::Triangulation trianObj;
 
-    //(1)»ñÈ¡ĞéÄâ¿Õ¼äÖĞµÚÒ»ÕÅÍ¼ÏñµÄview£¬°üº¬ÁËÍ¼Ïñ£¬ÄÚ²Î£¬Íâ²Î
+    //(1)è·å–è™šæ‹Ÿç©ºé—´ä¸­ç¬¬ä¸€å¼ å›¾åƒçš„viewï¼ŒåŒ…å«äº†å›¾åƒï¼Œå†…å‚ï¼Œå¤–å‚
     View *view = my_sfm_data.views.at(firstImgId).get();
-    //»ñÈ¡ÄÚÍâ²Î
+    //è·å–å†…å¤–å‚
     openMVG::cameras::IntrinsicBase * cam = my_sfm_data.GetIntrinsics().at(view->id_intrinsic).get();
     openMVG::geometry::Pose3 pose = my_sfm_data.GetPoseOrDie(view);
-    string img1Name = my_sfm_data.s_root_path + "\\" + view->s_Img_path;
-    //µÚÒ»ÕÅÍ¼Ïñ
-    src = cvLoadImage(img1Name.c_str());
-    if (!src) {
-      printf("Could not load image file: %s\n", img1Name.c_str());
-      return EXIT_FAILURE;
+    string img1Name = my_sfm_data.s_root_path + "/" + view->s_Img_path;
+#ifdef _WIN32
+    image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall01.jpg";
+    capture(img1Name);
+#else
+    string image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall01.jpg";
+#endif // _WIN32
+    cv::Point2d pointOne;
+    {
+      std::fstream in(image_path + ".txt", std::ios::in);
+      in >> pointOne.x >> pointOne.y;
+      in.close();
     }
-    cvNamedWindow("screenshot", 0);
-    //ËõĞ¡ÌáÈ¡µÄÇøÓò
-    cvSetMouseCallback("screenshot", onMouse, NULL);//²¶×½Êó±ê
-    cvShowImage("screenshot", src);
-    cvWaitKey(0);
-    cv::Point2d pointOne = CvPoint(rect.x, rect.y);
-    cvReleaseImage(&src);
-    cvReleaseImage(&img);
-
-    //Í¬Àí»ñÈ¡µÚ¶şÕÅÍ¼ÏñµÄview2
+    //åŒç†è·å–ç¬¬äºŒå¼ å›¾åƒçš„view2
     View *view2 = my_sfm_data.views.at(secondImgId).get();
-    //»ñÈ¡ÄÚÍâ²Î
+    //è·å–å†…å¤–å‚
     openMVG::cameras::IntrinsicBase * cam2 = my_sfm_data.GetIntrinsics().at(view2->id_intrinsic).get();
     openMVG::geometry::Pose3 pose2 = my_sfm_data.GetPoseOrDie(view2);
-    string img2Name = my_sfm_data.s_root_path + "\\" + view2->s_Img_path;
-    src = cvLoadImage(img2Name.c_str());
-    if (!src) {
-      printf("Could not load image file: %s\n", img2Name.c_str());
-      return EXIT_FAILURE;
+    string img2Name = my_sfm_data.s_root_path + "/" + view2->s_Img_path;
+#ifdef _WIN32
+    image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall02.jpg";
+    capture(img2Name);
+#else
+    /*string */image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall02.jpg";
+#endif // _WIN32
+    cv::Point2d pointTwo;
+    {
+      std::fstream in(image_path + ".txt", std::ios::in);
+      in >> pointTwo.x >> pointTwo.y;
+      in.close();
     }
-    cvNamedWindow("screenshot", 0);
-    //ËõĞ¡ÌáÈ¡µÄÇøÓò
-    cvSetMouseCallback("screenshot", onMouse, NULL);//²¶×½Êó±ê
-    cvShowImage("screenshot", src);
-    cvWaitKey(0);
-    cv::Point2d pointTwo = CvPoint(rect.x, rect.y);
-    cvReleaseImage(&src);
-    cvReleaseImage(&img);
-    cvDestroyAllWindows();
-
     cout << pointOne << endl;
     cout << pointTwo << endl;
 
-    //±£´æÍ¼Ïñ
-    string image_path1 = my_sfm_data.s_root_path + "\\..\\" + "matches\\picSmall01.jpg"; //parser.get<String>( 0 );
-    string image_path2 = my_sfm_data.s_root_path + "\\..\\" + "matches\\picSmall02.jpg"; //parser.get<String>( 1 );
+    //è¯»å–æ¡†é€‰çš„å›¾åƒ
+    string image_path1 = my_sfm_data.s_root_path + "/../" + "matches/picSmall01.jpg";
+    string image_out_path1 = my_sfm_data.s_root_path + "/../" + "matches/picSmall01_with_lines.jpg";
+    string image_path2 = my_sfm_data.s_root_path + "/../" + "matches/picSmall02.jpg";
+    string image_out_path2 = my_sfm_data.s_root_path + "/../" + "matches/picSmall02_with_lines.jpg";
     if (image_path1.empty() || image_path2.empty()) {
-      //help();
       return EXIT_FAILURE;
     }
-
-    //(3)´ÓÂ·¾¶ÖĞ¶ÁÈ¡¿òÑ¡ºóµÄĞ¡Í¼Ïñ£¬ÒÔ½øĞĞÖ±ÏßÌáÈ¡
-    cv::Mat imgMat1 = cv::imread(image_path1, 1);
-    cv::Mat imgMat2 = cv::imread(image_path2, 1);
-
-    if (imgMat1.data == NULL || imgMat2.data == NULL) {
+#ifdef _WIN32
+    if (drawLines(image_path1.c_str(), image_out_path1.c_str()) == EXIT_FAILURE
+      || drawLines(image_path2.c_str(), image_out_path2.c_str()) == EXIT_FAILURE) {
+      cout << "error occur while get lines in picture" << endl;
+      return EXIT_FAILURE;
+    }
+    cv::Mat imgMat1 = cv::imread(image_out_path1, 1);
+    if (imgMat1.data == NULL) {
       cout << "Error, images could not be loaded. Please, check their path" << endl;
       return EXIT_FAILURE;
     }
+    cv::Mat imgMat2 = cv::imread(image_out_path2, 1);
+    if (imgMat1.data == NULL) {
+      cout << "Error, images could not be loaded. Please, check their path" << endl;
+      return EXIT_FAILURE;
+    }
+    imshow("ç¬¬ä¸€å¼ å›¾ç‰‡", imgMat1);
+    imshow("ç¬¬äºŒå¼ å›¾ç‰‡", imgMat2);
+    cvWaitKey(0);
+#endif // !_WIN32
+    vector<cv::line_descriptor::KeyLine> keylines1;
+    {
+      std::fstream in(image_out_path1 + ".txt", std::ios::in);
+      float start_x, start_y, end_x, end_y;
+      while (in >> start_x && in >> start_y && in >> end_x && in >> end_y) {
+        cv::line_descriptor::KeyLine line;
+        line.startPointX = start_x;
+        line.startPointY = start_y;
+        line.endPointX = end_x;
+        line.endPointY = end_y;
+        keylines1.push_back(line);
+        cout << start_x<<" "<<start_y<<" "<<end_x<<" "<<end_y<< endl;
+      }
+    }
+    vector<cv::line_descriptor::KeyLine> keylines2;
+    {
+      std::fstream in(image_out_path2 + ".txt", std::ios::in);
+      float start_x, start_y, end_x, end_y;
+      while (in >> start_x && in >> start_y && in >> end_x && in >> end_y) {
+        cv::line_descriptor::KeyLine line;
+        line.startPointX = start_x;
+        line.startPointY = start_y;
+        line.endPointX = end_x;
+        line.endPointY = end_y;
+        keylines2.push_back(line);
+        cout << start_x << " " << start_y << " " << end_x << " " << end_y << endl;
+      }
+    }
 
-    //Ö±ÏßÌáÈ¡
-    /* create a pointer to a BinaryDescriptor object with default parameters */
-    cv::Ptr<cv::line_descriptor::BinaryDescriptor> bd = cv::line_descriptor::BinaryDescriptor::createBinaryDescriptor();
-    /* compute lines and descriptors */
-    cv::Mat descr1, descr2;
-    vector<cv::line_descriptor::KeyLine> keylines1, keylines2;
-    (*bd)(imgMat1, cv::Mat::ones(imgMat1.size(), CV_8UC1), keylines1, descr1, false, false);
-    (*bd)(imgMat2, cv::Mat::ones(imgMat2.size(), CV_8UC1), keylines2, descr2, false, false);
-
-    //(4)¼ÆËãÁ½ÕÅÍ¼ÏñµÄ»ù´¡¾ØÕó
-    //µÚÒ»ÖÖ·½·¨£¬Í¨¹ıÁ½¸öÏà»úµÄÄÚÍâ²Î½øĞĞ¼ÆËã
+    //(4)è®¡ç®—ä¸¤å¼ å›¾åƒçš„åŸºç¡€çŸ©é˜µ
+    //ç¬¬ä¸€ç§æ–¹æ³•ï¼Œé€šè¿‡ä¸¤ä¸ªç›¸æœºçš„å†…å¤–å‚è¿›è¡Œè®¡ç®—
     Eigen::Matrix<double, 3, 4> proj1 = cam->get_projective_equivalent(pose),
       proj2 = cam2->get_projective_equivalent(pose2);
     openMVG::Vec3 c = my_sfm_data.poses[firstImgId].center();
@@ -427,7 +408,7 @@ int main(int argc, char **argv) {
         promatric2.at<double>(i, j) = proj2(i, j);
       }
     }
-    //µÚÒ»¸öÏà»úÖĞĞÄ
+    //ç¬¬ä¸€ä¸ªç›¸æœºä¸­å¿ƒ
     cv::Mat C(4, 1, CV_64FC1);
     for (int i = 0; i < 3; i++) {
       C.at<double>(i, 0) = c(i, 0);
@@ -442,47 +423,33 @@ int main(int argc, char **argv) {
     eInvSym.at<double>(1, 2) = -ee.at<double>(0);
     eInvSym.at<double>(2, 0) = -ee.at<double>(1);
     eInvSym.at<double>(2, 1) = ee.at<double>(0);
-
     cv::Mat FundamentEPP = eInvSym*promatric2*promatric1.inv(cv::DECOMP_SVD);
 
-    //(5)ÔÚÁ½ÕÅĞ¡Í¼ÏñÖĞ£¬ÓÉÓÃ»§ÊäÈëÍ¼Ïñ¶Ô
-    cout << "·Ö±ğÊäÈëÍ¼Ïñ1ÓëÍ¼Ïñ2ÖĞ¶ÔÓ¦µÄÁ½¸öÏß¶Î±àºÅ:";
-    ///////*Ñ¡ÔñËùĞèÏß²¢ÏÔÊ¾*/
-    sort(keylines1.begin(), keylines1.end(), sortdes);
-    size_t limitMax = 10 < keylines1.size() ? 10 : keylines1.size();
-    for (int i = 0; i < limitMax; i++) {
-      line(imgMat1, CvPoint(keylines1[i].startPointX, keylines1[i].startPointY), CvPoint(keylines1[i].endPointX, keylines1[i].endPointY), cv::Scalar(0, 0, 255), 1);
-      string id = "0";
-      id[0] = '0' + i;
-      putText(imgMat1, id, CvPoint((keylines1[i].startPointX + keylines1[i].endPointX) / 2, (keylines1[i].startPointY + keylines1[i].endPointY) / 2), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255));
-    }
-    imwrite(my_sfm_data.s_root_path + "\\..\\" + "matches\\picSmall01_with_line.jpg", imgMat1);
-    imshow("µÚÒ»ÕÅÍ¼Æ¬", imgMat1);
-
-    limitMax = 10 < keylines2.size() ? 10 : keylines2.size();
-    sort(keylines2.begin(), keylines2.end(), sortdes);
-    for (int i = 0; i < limitMax; i++) {
-      line(imgMat2, CvPoint(keylines2[i].startPointX, keylines2[i].startPointY), CvPoint(keylines2[i].endPointX, keylines2[i].endPointY), cv::Scalar(0, 0, 255), 1);
-      string id = "0";
-      id[0] = '0' + i;
-      putText(imgMat2, id, CvPoint((keylines2[i].startPointX + keylines2[i].endPointX) / 2, (keylines2[i].startPointY + keylines2[i].endPointY) / 2), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255));
-    }
-    imwrite(my_sfm_data.s_root_path + "\\..\\" + "matches\\picSmall02_with_line.jpg", imgMat2);
-    imshow("µÚ¶şÕÅÍ¼Æ¬", imgMat2);
-    cv::waitKey(0);
-
-    int lineIdx1 = 0; //Ïß1µÄ´úºÅ
-    int lineIdx2[10]; //Ïß2µÄ´úºÅ
+    //(5)åœ¨ä¸¤å¼ å°å›¾åƒä¸­ï¼Œç”±ç”¨æˆ·è¾“å…¥å›¾åƒå¯¹
+    cout << "åˆ†åˆ«è¾“å…¥å›¾åƒ1ä¸å›¾åƒ2ä¸­å¯¹åº”çš„ä¸¤ä¸ªçº¿æ®µç¼–å·:";
+    int lineIdx1 = 0; //çº¿1çš„ä»£å·
+    int lineIdx2[10]; //çº¿2çš„ä»£å·
     int lineTp = 0;
     vector<openMVG::Vec2 > points_1, points_2;
-    fstream out(txtPath + "\\point.txt", ios::out);
+    fstream out(txtPath + "/point.txt", ios::out);
     vector<cv::Point2f> point1;
+
+#ifdef _WIN32
     while (std::cin >> lineIdx1) {
       if (lineIdx1 == -1)
         break;
       cin >> lineIdx2[lineTp++];
       if (lineIdx2[lineTp - 1] == -1)
         break;
+#else //__linux__
+    fstream picTxtin(my_sfm_data.s_root_path + "/../" + "matches/pic.txt", ios::in);
+    while (picTxtin >> lineIdx1) {
+      if (lineIdx1 == -1)
+        break;
+      picTxtin >> lineIdx2[lineTp++];
+      if (lineIdx2[lineTp - 1] == -1)
+        break;
+#endif //_WIN32
       double start_x = keylines1[lineIdx1].startPointX + pointOne.x;
       double start_y = keylines1[lineIdx1].startPointY + pointOne.y;
       double end_x = keylines1[lineIdx1].endPointX + pointOne.x;
@@ -496,22 +463,25 @@ int main(int argc, char **argv) {
       points_1.push_back(openMVG::Vec2(start_x, start_y));
       points_1.push_back(openMVG::Vec2(end_x, end_y));
     }
+#ifdef _WIN32
     cv::destroyAllWindows();
-
-    //(6)ÉèÖÃ¼«ÏßÍ¼ÏñµÄÂ·¾¶ÓëÍ¼ÏñÃû³Æ£¬±£ÁôÃ¿´Î¼ÆËãµÄ¼«ÏßÍ¼Ïñ
-    //´´½¨Â·¾¶
-    mkdir((my_sfm_data.s_root_path + "\\..\\" + "epipolarImg").c_str());
-    //ÉèÖÃÍ¼ÏñÃû³Æ£¬×¢Òâ\\½öÔÚÊı×éÖĞÕ¼ÓÃÒ»Î»
-    string epiImg1Path = "epipolarImg\\fisrtImg00.jpg";
+#else //__linux__
+    picTxtin.close();
+#endif //_WIN32
+    //(6)è®¾ç½®æçº¿å›¾åƒçš„è·¯å¾„ä¸å›¾åƒåç§°ï¼Œä¿ç•™æ¯æ¬¡è®¡ç®—çš„æçº¿å›¾åƒ
+    //åˆ›å»ºè·¯å¾„
+    mkdir((my_sfm_data.s_root_path + "/../" + "epipolarImg").c_str());
+    //è®¾ç½®å›¾åƒåç§°ï¼Œæ³¨æ„\\ä»…åœ¨æ•°ç»„ä¸­å ç”¨ä¸€ä½
+    string epiImg1Path = "epipolarImg/fisrtImg00.jpg";
     epiImg1Path[20] = firstImgId + '0';
     epiImg1Path[21] = secondImgId + '0';
-    epiImg1Path = my_sfm_data.s_root_path + "\\..\\" + epiImg1Path;
-    string epiImg2Path = "epipolarImg\\secondImg00.jpg";
+    epiImg1Path = my_sfm_data.s_root_path + "/../" + epiImg1Path;
+    string epiImg2Path = "epipolarImg/secondImg00.jpg";
     epiImg2Path[21] = firstImgId + '0';
     epiImg2Path[22] = secondImgId + '0';
-    epiImg2Path = my_sfm_data.s_root_path + "\\..\\" + epiImg2Path;
+    epiImg2Path = my_sfm_data.s_root_path + "/../" + epiImg2Path;
 
-    //(7)»­Í¼Ïñ1ÖĞµÄÁ½µã
+    //(7)ç”»å›¾åƒ1ä¸­çš„ä¸¤ç‚¹
     cv::Mat imageMat1 = cv::imread(img1Name, 1);
     for (int i = 0; i < point1.size(); i++) {
       circle(imageMat1, point1[i], 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
@@ -520,16 +490,16 @@ int main(int argc, char **argv) {
     }
     imwrite(epiImg1Path, imageMat1);
 
-    //(8)¼ÆËã¼«Ïß
+    //(8)è®¡ç®—æçº¿
     for (int i = 0; i < point1.size(); i++) {
       openMVG::Vec2 tmp = cam->get_ud_pixel(points_1[i]);
       point1[i] = cv::Point2f(tmp.x(), tmp.y());
     }
-    //²ÉÓÃOPENCVµÄº¯Êı¼ÆËã¼«Ïß
+    //é‡‡ç”¨OPENCVçš„å‡½æ•°è®¡ç®—æçº¿
     vector<cv::Vec3f> corresEpilines;
     computeCorrespondEpilines(point1, 1, FundamentEPP, corresEpilines);
 
-    //(9)»­Í¼2ÖĞµÄÁ½µã¶ÔÓ¦µÄÁ½Ìõ¼«Ïß²¢¼ÆËã¼«ÏßÓëÖ±ÏßµÄ½»µã
+    //(9)ç”»å›¾2ä¸­çš„ä¸¤ç‚¹å¯¹åº”çš„ä¸¤æ¡æçº¿å¹¶è®¡ç®—æçº¿ä¸ç›´çº¿çš„äº¤ç‚¹
     cv::Mat imageMat2 = cv::imread(img2Name, 1);
     lineTp = 0;
     for (vector<cv::Vec3f>::const_iterator it = corresEpilines.begin(); it != corresEpilines.end(); ++it) {
@@ -539,18 +509,18 @@ int main(int argc, char **argv) {
       // draw the epipolar line between first and last column
       line(imageMat2, cv::Point(0.0, -c1 / b1), cv::Point(imageMat2.cols, -(c1 + a1 * imageMat2.cols) / b1), cv::Scalar(0, 255, 0), 1.5);
 
-      //ÁíÒ»ÌõÏßµÄa,b,c
+      //å¦ä¸€æ¡çº¿çš„a,b,c
       int idx2 = lineIdx2[lineTp / 2];
       lineTp++;
       float a2 = keylines2[idx2].endPointY - keylines2[idx2].startPointY;    //y2-y1
       float b2 = keylines2[idx2].startPointX - keylines2[idx2].endPointX;    //x1-x2
       float c2 = (keylines2[idx2].endPointX + pointTwo.x)*(keylines2[idx2].startPointY + pointTwo.y) - (keylines2[idx2].startPointX + pointTwo.x)*(keylines2[idx2].endPointY + pointTwo.y);    //x2y1-x1y2
-                                                                                             //»­³öÊúÖ±Ïß
+                                                                                             //ç”»å‡ºç«–ç›´çº¿
       if (lineTp % 2 == 0) {
         line(imageMat2, cv::Point(0.0, -c2 / b2), cv::Point(imageMat2.cols, -(c2 + a2 * imageMat2.cols) / b2), cv::Scalar(255, 0, 0), 0.5);
       }
 
-      //¼ÆËã½»µã
+      //è®¡ç®—äº¤ç‚¹
       cv::Point2d ans;
       ans.x = (b1*c2 - b2*c1) / (a1*b2 - a2*b1);
       ans.y = (a2*c1 - a1*c2) / (a1*b2 - a2*b1);
@@ -561,41 +531,40 @@ int main(int argc, char **argv) {
     }
     imwrite(epiImg2Path, imageMat2);
 
-    /**************3¡¢Í¨¹ı¶¥µã¶Ô½øĞĞÈı½Ç²âÁ¿£¬²¢¼ÆËã×ËÌ¬½Ç**************/
-    //(1)Èı½Ç²âÁ¿
+    /**************3ã€é€šè¿‡é¡¶ç‚¹å¯¹è¿›è¡Œä¸‰è§’æµ‹é‡ï¼Œå¹¶è®¡ç®—å§¿æ€è§’**************/
+    //(1)ä¸‰è§’æµ‹é‡
     std::vector<openMVG::Vec3> points3D;
     for (int i = 0; i < points_1.size(); i++) {
       cout << "first camera's undistorted pixel coordinate:" << endl << cam->get_ud_pixel(points_1[i]) << endl;
       cout << "second camera's undistorted pixel coordinate:" << endl << cam2->get_ud_pixel(points_2[i]) << endl;
       trianObj.add(cam->get_projective_equivalent(pose), cam->get_ud_pixel(points_1[i]));
       trianObj.add(cam2->get_projective_equivalent(pose2), cam2->get_ud_pixel(points_2[i]));
-      //Ê¹ÓÃĞı×ª×ª»¯¾ØÕó£¬¶ÔÈı½Ç²âÁ¿ºóµÄ¶¥µã½øĞĞĞı×ª×ª»¯£¬¶ø²»ÊÇ¶ÔËùÓĞ¶¥µã¡¢Ïà»ú½øĞĞ×ª»¯
+      //ä½¿ç”¨æ—‹è½¬è½¬åŒ–çŸ©é˜µï¼Œå¯¹ä¸‰è§’æµ‹é‡åçš„é¡¶ç‚¹è¿›è¡Œæ—‹è½¬è½¬åŒ–ï¼Œè€Œä¸æ˜¯å¯¹æ‰€æœ‰é¡¶ç‚¹ã€ç›¸æœºè¿›è¡Œè½¬åŒ–
       points3D.push_back(finalrt*trianObj.compute());
       trianObj.clear();
     }
 
-    fstream outPoints(txtPath + "\\points3D.txt", ios::out);
+    fstream outPoints(txtPath + "/points3D.txt", ios::out);
     for (int i = 0; i < points3D.size(); i++) {
       outPoints << points3D[i].x() << " " << points3D[i].y() << " " << points3D[i].z() << " " << 255 << " " << 0 << " " << 0 << endl;
     }
     outPoints.close();
 
-    //(2)¼ÆËã×ËÌ¬½Ç
-    string anglePath = my_sfm_data.s_root_path + "\\..\\" + "angle";
+    //(2)è®¡ç®—å§¿æ€è§’
+    string anglePath = my_sfm_data.s_root_path + "/../" + "angle";
     mkdir(anglePath.c_str());
-    string angle = "angle\\angle00.txt";
+    string angle = "angle/angle00.txt";
     angle[11] = firstImgId + '0';
     angle[12] = secondImgId + '0';
-    fstream outAngle(my_sfm_data.s_root_path + "\\..\\" + angle, ios::out);
+    fstream outAngle(my_sfm_data.s_root_path + "/../" + angle, ios::out);
     for (unsigned int i = 0; i < points3D.size(); i = i + 2) {
       double fuyang = getFuYang(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
       double shuiping = getShuiPing(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
-      outAngle << setprecision(15) << "¸©Ñö½Ç£º" << fuyang << endl << "Ë®Æ½½Ç£º" << shuiping << endl;
-      cout << setprecision(15) << "¸©Ñö½Ç£º" << fuyang << endl << "Ë®Æ½½Ç£º" << shuiping << endl;
+      outAngle << setprecision(15) << "ä¿¯ä»°è§’ï¼š" << fuyang << endl << "æ°´å¹³è§’ï¼š" << shuiping << endl;
+      cout << setprecision(15) << "ä¿¯ä»°è§’ï¼š" << fuyang << endl << "æ°´å¹³è§’ï¼š" << shuiping << endl;
     }
     outAngle.close();
-
-    //Ê¹ÓÃĞı×ª×ª»¯¾ØÕó£¬¶ÔËùÓĞÆäËûµãÔÆ½øĞĞĞı×ª£¬ÒòÎªÒª¿´µ½×îºóĞı×ªºóµÄµãÔÆ×ËÌ¬£¬ÔÚÕû¸ö¼ÆËã¹ı³ÌÖĞ£¬ÕâÒ»²½ÊÇ¿ÉÑ¡Ïî
+    //ä½¿ç”¨æ—‹è½¬è½¬åŒ–çŸ©é˜µï¼Œå¯¹æ‰€æœ‰å…¶ä»–ç‚¹äº‘è¿›è¡Œæ—‹è½¬ï¼Œå› ä¸ºè¦çœ‹åˆ°æœ€åæ—‹è½¬åçš„ç‚¹äº‘å§¿æ€ï¼Œåœ¨æ•´ä¸ªè®¡ç®—è¿‡ç¨‹ä¸­ï¼Œè¿™ä¸€æ­¥æ˜¯å¯é€‰é¡¹
     for (Landmarks::iterator iterL = my_sfm_data.structure.begin();
       iterL != my_sfm_data.structure.end(); ++iterL) {
       iterL->second.X = finalrt*(iterL->second.X);

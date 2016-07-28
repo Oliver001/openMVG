@@ -1,5 +1,5 @@
-#include "tx.h"
-//·Ö±ğÒÔXYZ, ZXY, ZYXµÄË³Ğò£¬½«Ğı×ª½ÇÖØ¹¹³ÉĞı×ª¾ØÕó»òÕßÓÉĞı×ª¾ØÕó·Ö½âÖÁĞı×ª½Ç
+ï»¿#include "tx.h"
+//åˆ†åˆ«ä»¥XYZ, ZXY, ZYXçš„é¡ºåºï¼Œå°†æ—‹è½¬è§’é‡æ„æˆæ—‹è½¬çŸ©é˜µæˆ–è€…ç”±æ—‹è½¬çŸ©é˜µåˆ†è§£è‡³æ—‹è½¬è§’
 void RotationMatrixToEulerAnglesXYZ(Eigen::Matrix<double, 3, 3>&  R, double* euler) {
   double r00 = R(0, 0), r01 = R(0, 1), r02 = R(0, 2), r11 = R(1, 1), r12 = R(1, 2), r22 = R(2, 2);
   euler[0] = atan2(-r01, r00) * 180.0 / M_PI;
@@ -52,7 +52,7 @@ void getRotMatrixXYZ(Eigen::Matrix<double, 3, 3>&  R, double angleZ, double angl
   rotY << cos(angleY), 0, sin(angleY), 0, 1, 0, -sin(angleY), 0, cos(angleY);
   R = rotX*rotY*rotZ;
 }
-//´ÓÎÄ¼şÖĞ»ñÈ¡Èı¸öĞı×ª½Ç
+//ä»æ–‡ä»¶ä¸­è·å–ä¸‰ä¸ªæ—‹è½¬è§’
 void getAngleFromTxt(double* angles, std::string& path, std::string& identity) {
   std::ifstream fin(path, std::ios::in);
   std::string line;
@@ -67,7 +67,7 @@ void getAngleFromTxt(double* angles, std::string& path, std::string& identity) {
   }//while
 }
 
-// »ñµÃ RotationMatrix
+// è·å¾— RotationMatrix
 void getRotationMatrix(Eigen::Matrix<double, 3, 3>& R, std::string& path) {
   std::ifstream fin(path, std::ios::in);
   std::string line;
@@ -84,7 +84,7 @@ void getRotationMatrix(Eigen::Matrix<double, 3, 3>& R, std::string& path) {
   }//while
 }
 
-// »ñµÃ RemappedRotationMatrix
+// è·å¾— RemappedRotationMatrix
 void getRemappedRotationMatrix(Eigen::Matrix<double, 3, 3>& R, std::string& path) {
   std::ifstream fin(path, std::ios::in);
   std::string line;
@@ -101,44 +101,83 @@ void getRemappedRotationMatrix(Eigen::Matrix<double, 3, 3>& R, std::string& path
   }//while
 }
 
-//»ñÈ¡¾àÀë
+//è·å–è·ç¦»
 double getDistance(double tx, double ty, double tz, double rx, double ry, double rz) {
   return (sqrt((tx - rx) * (tx - rx) + (ty - ry) * (ty - ry) + (tz - rz) * (tz - rz)));
 }
 
-//¼ÆËã¸©Ñö½Ç
+//è®¡ç®—ä¿¯ä»°è§’
 double getFuYang(double tx, double ty, double tz, double rx, double ry, double rz) {
   return asin(getDistance(tx, ty, tz, tx, ty, rz) / getDistance(tx, ty, tz, rx, ry, rz))*180.0 / M_PI;
 }
 
-//¼ÆËãË®Æ½½Ç
+//è®¡ç®—æ°´å¹³è§’
 double getShuiPing(double tx, double ty, double tz, double rx, double ry, double rz) {
   double angle;
   double vecX, vecY;
-  //tzÎªÖÕµãµÄ×İ×ø±ê£¬rzÎªÊ¼µãµÄ×İ×ø±ê
+  //tzä¸ºç»ˆç‚¹çš„çºµåæ ‡ï¼Œrzä¸ºå§‹ç‚¹çš„çºµåæ ‡
   if (tz >= rz) {
-    //»ñÈ¡µ½Ê¸Á¿
+    //è·å–åˆ°çŸ¢é‡
     vecX = tx - rx;
     vecY = ty - ry;
     if (rx <= tx) {
-      //tÔÚrµÄÓÒ±ß£¬ÖÕµãÔÚÊ¼µãµÄÓÒ±ß
+      //tåœ¨rçš„å³è¾¹ï¼Œç»ˆç‚¹åœ¨å§‹ç‚¹çš„å³è¾¹
       angle = (acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY))))* 180.0 / M_PI;
     } else {
-      //tÔÚrµÄ×ó±ß£¬ÖÕµãÔÚÊ¼µãµÄ×ó±ß
+      //tåœ¨rçš„å·¦è¾¹ï¼Œç»ˆç‚¹åœ¨å§‹ç‚¹çš„å·¦è¾¹
       angle = (2 * M_PI - acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY))))* 180.0 / M_PI;
     }
     return angle;
   }
-  //rzÎªÖÕµãµÄ×İ×ø±ê£¬tzÎªÊ¼µãµÄ×İ×ø±ê
-  //»ñÈ¡µ½Ê¸Á¿
+  //rzä¸ºç»ˆç‚¹çš„çºµåæ ‡ï¼Œtzä¸ºå§‹ç‚¹çš„çºµåæ ‡
+  //è·å–åˆ°çŸ¢é‡
   vecX = rx - tx;
   vecY = ry - ty;
   if (tx <= rx) {
-    //rÔÚtµÄÓÒ±ß£¬ÖÕµãÔÚÊ¼µãµÄÓÒ±ß
+    //råœ¨tçš„å³è¾¹ï¼Œç»ˆç‚¹åœ¨å§‹ç‚¹çš„å³è¾¹
     angle = (acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY))))* 180.0 / M_PI;
   } else {
-    //rÔÚtµÄ×ó±ß£¬ÖÕµãÔÚÊ¼µãµÄ×ó±ß
+    //råœ¨tçš„å·¦è¾¹ï¼Œç»ˆç‚¹åœ¨å§‹ç‚¹çš„å·¦è¾¹
     angle = (2 * M_PI - acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY))))* 180.0 / M_PI;
   }
   return angle;
+}
+//æ¯”è¾ƒkeyLine
+bool sortdes(const cv::line_descriptor::KeyLine &k1, const cv::line_descriptor::KeyLine &k2) {
+  return k1.lineLength > k2.lineLength;
+}
+
+int drawLines(const char* imageName, const char* outputImgName) {
+  //(3)ä»è·¯å¾„ä¸­è¯»å–æ¡†é€‰åçš„å°å›¾åƒï¼Œä»¥è¿›è¡Œç›´çº¿æå–
+  cv::Mat imgMat1 = cv::imread(imageName, 1);
+  if (imgMat1.data == NULL) {
+    std::cout << "Error, images could not be loaded. Please, check their path" << std::endl;
+    return EXIT_FAILURE;
+  }
+  //ç›´çº¿æå–
+  /* create a pointer to a BinaryDescriptor object with default parameters */
+  cv::Ptr<cv::line_descriptor::BinaryDescriptor> bd = cv::line_descriptor::BinaryDescriptor::createBinaryDescriptor();
+  /* compute lines and descriptors */
+  cv::Mat descr1, descr2;
+  std::vector<cv::line_descriptor::KeyLine> keylines;
+  (*bd)(imgMat1, cv::Mat::ones(imgMat1.size(), CV_8UC1), keylines, descr1, false, false);
+
+  ///////*é€‰æ‹©æ‰€éœ€çº¿å¹¶æ˜¾ç¤º*/
+  sort(keylines.begin(), keylines.end(), sortdes);
+  size_t limitMax = 10 < keylines.size() ? 10 : keylines.size();
+  for (int i = 0; i < limitMax; i++) {
+    line(imgMat1, CvPoint(keylines[i].startPointX, keylines[i].startPointY), CvPoint(keylines[i].endPointX, keylines[i].endPointY), cv::Scalar(0, 0, 255), 1);
+    std::string id = "0";
+    id[0] = '0' + i;
+    putText(imgMat1, id, CvPoint((keylines[i].startPointX + keylines[i].endPointX) / 2, (keylines[i].startPointY + keylines[i].endPointY) / 2), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255));
+  }
+  imwrite(outputImgName, imgMat1);
+  std::string txtpath = outputImgName;
+  std::fstream out(txtpath + ".txt", std::ios::out);
+  for (size_t i = 0; i < limitMax; i++) {
+    out << keylines[i].startPointX << " " << keylines[i].startPointY << " "
+      << keylines[i].endPointX << " " << keylines[i].endPointY << std::endl;
+  }
+  out.close();
+  return EXIT_SUCCESS;
 }

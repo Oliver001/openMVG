@@ -342,9 +342,9 @@ if(NOT OpenMVG_BUILD_TX_MINIMUM)
 	CONFIGURE_FILE(${OPENMVG_TUTORIAL_IN_FILE}
 		"${CMAKE_CURRENT_BINARY_DIR}/SfM_SequentialPipeline.py" @ONLY)
 endif(NOT OpenMVG_BUILD_TX_MINIMUM)
-IF(MSVC AND OpenMVG_USE_OPENCV)
+IF(OpenMVG_USE_OPENCV)
   ADD_EXECUTABLE(openMVG_main_tianxian
-      main_tianxian.cpp tx.cpp)
+      main_tianxian.cpp tx.cpp capture.cpp)
   TARGET_LINK_LIBRARIES(openMVG_main_tianxian
       openMVG_system
       openMVG_image
