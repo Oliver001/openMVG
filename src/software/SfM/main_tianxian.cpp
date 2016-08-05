@@ -33,7 +33,6 @@
 #define mkdir(x) mkdir(x,0777)
 #endif // __linux__
 
-#define MATCHES_DIST_THRESHOLD 25
 
 using namespace openMVG::sfm;
 
@@ -201,34 +200,43 @@ int main(int argc, char **argv) {
     SfM_Data my_sfm_data = sfmEngine.Get_SfM_Data();
 
     //(2)获取虚拟空间的旋转矩阵
-    size_t cameraNum = my_sfm_data.poses.size();
+	size_t viewsNum = my_sfm_data.views.size();
+    size_t posesNum = my_sfm_data.poses.size();
     vector<Eigen::Matrix<double, 3, 3>> rotations;
+	vector<int> posesIndex;
+	for (Poses::iterator itr = my_sfm_data.poses.begin(); itr != my_sfm_data.poses.end(); itr++) {
+		rotations.push_back(itr->second.rotation().inverse());
+		//存储有效poses的索引号
+		posesIndex.push_back(itr->first);
+	}
 
     //(3)获取现实空间中的旋转矩阵
     //(4)将手机矩阵转化为相机矩阵Remap
-    vector<Eigen::Matrix<double, 3, 3>> rotationsAndroid;
+    vector<Eigen::Matrix<double, 3, 3>> rotationsAndroid,rotationsAndroidAll;
     Eigen::Matrix<double, 3, 3> rotXZ;
     rotXZ << 0, 1, 0, 1, 0, 0, 0, 0, -1;
     openMVG::sfm::Views views = my_sfm_data.GetViews();
-    for (size_t i = 0; i < cameraNum; i++) {
+    for (size_t i = 0; i < viewsNum; i++) {
       Eigen::Matrix<double, 3, 3> tempMat1;
       double tempAngle[3] = { 0.0 };
-      rotations.push_back(my_sfm_data.poses[i].rotation().inverse());
       string filename = my_sfm_data.s_root_path + "/";
       filename = filename + views.at(i)->s_Img_path;
       filename = filename + ".txt";
       string id = "Orientation_NEW_API:";
       getAngleFromTxt(tempAngle, filename, id);
       getRotMatrixZXY(tempMat1, -tempAngle[0], tempAngle[2], -tempAngle[1]);
-      rotationsAndroid.push_back(tempMat1 * rotXZ);
+	  rotationsAndroidAll.push_back(tempMat1 * rotXZ);
     }
+	for (size_t i = 0; i != posesIndex.size(); i++) {
+		rotationsAndroid.push_back(rotationsAndroidAll[posesIndex[i]]);
+	}
     //(5)计算旋转转化矩阵，XYZ, ZXY, ZYX三种分解方式都计算，最后选取了XYZ的方式
     cout << "从虚拟空间旋转至现实空间的旋转矩阵:" << endl;
     std::vector<double> eulerVector;
-    std::vector<Eigen::Matrix<double, 3, 3>> rt(cameraNum);
+    std::vector<Eigen::Matrix<double, 3, 3>> rt(posesNum);
 
     cout << endl << "ZYX" << endl;
-    for (int i = 0; i < cameraNum; i++) {
+    for (int i = 0; i < posesNum; i++) {
       double eulerT[3];
       rt[i] = rotationsAndroid[i] * (rotations[i].inverse());
       RotationMatrixToEulerAnglesZYX(rt[i], eulerT);
@@ -240,15 +248,15 @@ int main(int argc, char **argv) {
     //(6)将旋转矩阵分解成旋转角时，可能分解出+179和-179，这两个量数值差异较大，
     //但是角度上是很接近，所以需要判定并归一化，都化为同一个符号
     //判定是否存在180左右的数值,当一个数值存在大于175，需要检测
-    int size_of_eulerVector = cameraNum * 3;
+    int size_of_eulerVector = posesNum * 3;
     for (int j = 0; j < 3; j++) {
       if (abs(eulerVector[j]) > 175) {
         int positiveNum = 0;
         for (int i = 0; i < size_of_eulerVector; i += 3) {
           positiveNum += (eulerVector[i + j] > 0);
         }
-        if (positiveNum < cameraNum)
-          if (positiveNum < cameraNum >> 1) {
+        if (positiveNum < posesNum)
+          if (positiveNum < posesNum >> 1) {
             for (int i = 0; i < size_of_eulerVector; i += 3) {
               eulerVector[i + j] = abs(eulerVector[i + j]);
             }
@@ -266,9 +274,9 @@ int main(int argc, char **argv) {
       eulerTotal[1] += eulerVector[i + 1];
       eulerTotal[2] += eulerVector[i + 2];
     }
-    eulerTotal[0] /= cameraNum;
-    eulerTotal[1] /= cameraNum;
-    eulerTotal[2] /= cameraNum;
+    eulerTotal[0] /= posesNum;
+    eulerTotal[1] /= posesNum;
+    eulerTotal[2] /= posesNum;
     Eigen::Matrix<double, 3, 3> finalrt;
     getRotMatrixZYX(finalrt, eulerTotal[0], eulerTotal[1], eulerTotal[2]);
 
@@ -288,7 +296,7 @@ int main(int argc, char **argv) {
     string txtPath = my_sfm_data.s_root_path + "/../" + "txtFiles";
     mkdir(txtPath.c_str());
     fstream tr0(txtPath + "/transformRot.txt", ios::out);
-    for (int i = 0; i < cameraNum; i++) {
+    for (int i = 0; i < posesNum; i++) {
       tr0 << "rt" << i << endl << rt[i] << endl;
     }
     //tr0 << "rt4_2:" << rt4_2 << endl;
