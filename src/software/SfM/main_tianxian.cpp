@@ -26,6 +26,7 @@
 
 #include "tx.h"
 #include "capture.h"
+#include "proj_api.h"
 #ifdef __linux__
 #include<sys/types.h>
 #include<sys/stat.h>
@@ -56,7 +57,6 @@ int main(int argc, char **argv) {
   int iRotationAveragingMethod = int(ROTATION_AVERAGING_L2);
   int iTranslationAveragingMethod = int(TRANSLATION_AVERAGING_SOFTL1);
   std::string sIntrinsic_refinement_options = "ADJUST_ALL";
-  int firstImgId = 0, secondImgId = 1;
 
   cmd.add(make_option('i', sSfM_Data_Filename, "input_file"));
   cmd.add(make_option('m', sMatchesDir, "matchdir"));
@@ -64,10 +64,6 @@ int main(int argc, char **argv) {
   cmd.add(make_option('r', iRotationAveragingMethod, "rotationAveraging"));
   cmd.add(make_option('t', iTranslationAveragingMethod, "translationAveraging"));
   cmd.add(make_option('f', sIntrinsic_refinement_options, "refineIntrinsics"));
-  //第一张图像的索引号以-a表示，第二张图像的索引号以-b表示
-  cmd.add(make_option('a', firstImgId, "imgIndex 0"));
-  cmd.add(make_option('b', secondImgId, "imgIndex 1"));
-  //图像与txt所在的文件夹
   try {
     if (argc == 1) throw std::string("Invalid parameter.");
     cmd.process(argc, argv);
@@ -216,21 +212,30 @@ int main(int argc, char **argv) {
     Eigen::Matrix<double, 3, 3> rotXZ;
     rotXZ << 0, 1, 0, 1, 0, 0, 0, 0, -1;
     openMVG::sfm::Views views = my_sfm_data.GetViews();
+	vector<vector<double>> allGPS;
     for (size_t i = 0; i < viewsNum; i++) {
       Eigen::Matrix<double, 3, 3> tempMat1;
       double tempAngle[3] = { 0.0 };
+	  double tempGPS[3] = { 0.0 };
+	  vector<double> tempGPSvec;
       string filename = my_sfm_data.s_root_path + "/";
       filename = filename + views.at(i)->s_Img_path;
       filename = filename + ".txt";
-      string id = "Orientation_NEW_API:";
-      getAngleFromTxt(tempAngle, filename, id);
+	  string angleId = "Orientation_NEW_API:";
+	  getInfoFromTxt(tempAngle, filename, angleId);
+	  string GPSId = "GPS:";
+	  getInfoFromTxt(tempGPS, filename, GPSId);
+	  tempGPSvec.push_back(tempGPS[0]);
+	  tempGPSvec.push_back(tempGPS[1]);
+	  tempGPSvec.push_back(tempGPS[2]);
+	  allGPS.push_back(tempGPSvec);
       getRotMatrixZXY(tempMat1, -tempAngle[0], tempAngle[2], -tempAngle[1]);
 	  rotationsAndroidAll.push_back(tempMat1 * rotXZ);
     }
 	for (size_t i = 0; i != posesIndex.size(); i++) {
 		rotationsAndroid.push_back(rotationsAndroidAll[posesIndex[i]]);
 	}
-    //(5)计算旋转转化矩阵，XYZ, ZXY, ZYX三种分解方式都计算，最后选取了XYZ的方式
+    //(5)计算旋转转化矩阵，XYZ, ZXY, ZYX三种分解方式都计算，最后选取了ZYX的方式
     cout << "从虚拟空间旋转至现实空间的旋转矩阵:" << endl;
     std::vector<double> eulerVector;
     std::vector<Eigen::Matrix<double, 3, 3>> rt(posesNum);
@@ -303,275 +308,365 @@ int main(int argc, char **argv) {
     tr0 << "final_rt:" << finalrt << endl;
     tr0.close();
 
+
+
     /*********2、通过直线提取与极限约束获取顶点对以进行三角测量****************/
     openMVG::Triangulation trianObj;
 
-    //(1)获取虚拟空间中第一张图像的view，包含了图像，内参，外参
-    View *view = my_sfm_data.views.at(firstImgId).get();
-    //获取内外参
-    openMVG::cameras::IntrinsicBase * cam = my_sfm_data.GetIntrinsics().at(view->id_intrinsic).get();
-    openMVG::geometry::Pose3 pose = my_sfm_data.GetPoseOrDie(view);
-    string img1Name = my_sfm_data.s_root_path + "/" + view->s_Img_path;
-#ifdef _WIN32
-    image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall01.jpg";
-    capture(img1Name);
-#else
-    string image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall01.jpg";
-#endif // _WIN32
-    cv::Point2d pointOne;
-    {
-      std::fstream in(image_path + ".txt", std::ios::in);
-      in >> pointOne.x >> pointOne.y;
-      in.close();
-    }
-    //同理获取第二张图像的view2
-    View *view2 = my_sfm_data.views.at(secondImgId).get();
-    //获取内外参
-    openMVG::cameras::IntrinsicBase * cam2 = my_sfm_data.GetIntrinsics().at(view2->id_intrinsic).get();
-    openMVG::geometry::Pose3 pose2 = my_sfm_data.GetPoseOrDie(view2);
-    string img2Name = my_sfm_data.s_root_path + "/" + view2->s_Img_path;
-#ifdef _WIN32
-    image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall02.jpg";
-    capture(img2Name);
-#else
-    /*string */image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall02.jpg";
-#endif // _WIN32
-    cv::Point2d pointTwo;
-    {
-      std::fstream in(image_path + ".txt", std::ios::in);
-      in >> pointTwo.x >> pointTwo.y;
-      in.close();
-    }
-    cout << pointOne << endl;
-    cout << pointTwo << endl;
+	//(1)输出有效的、可以进行三角测量的索引号,让用户选择，并输入想要测量的张数，和每张的索引号
+	std::cout << "有效的索引号:";
+	for (int i = 0; i < posesIndex.size(); i++)
+		cout << posesIndex[i] << " ";
+	std::cout << endl;
+	int drawLinePicNum;                   //用户想进行提取的图像的数量
+	vector<int> drawLinePicIndex;         //要进行提取图像的索引号
+	vector<cv::Point2d> pointPair;
+	std::cout << "输入要匹配的张数：";
+	std::cin >> drawLinePicNum;
+	std::cout << "输入每张的索引号(每张的索引号，不能一样)：";
+	for(int i=0;i<drawLinePicNum;i++)
+	{
+		int tmp;
+		std::cin >> tmp;
+		drawLinePicIndex.push_back(tmp);
+	}
 
-    //读取框选的图像
-    string image_path1 = my_sfm_data.s_root_path + "/../" + "matches/picSmall01.jpg";
-    string image_out_path1 = my_sfm_data.s_root_path + "/../" + "matches/picSmall01_with_lines.jpg";
-    string image_path2 = my_sfm_data.s_root_path + "/../" + "matches/picSmall02.jpg";
-    string image_out_path2 = my_sfm_data.s_root_path + "/../" + "matches/picSmall02_with_lines.jpg";
-    if (image_path1.empty() || image_path2.empty()) {
-      return EXIT_FAILURE;
-    }
+
+	//(2)处理每一张图像
+	vector<vector<cv::line_descriptor::KeyLine>> keyLineArray;
+	for (int i = 0; i<drawLinePicNum; i++)
+	{
+		//获取虚拟空间中每一张图像的view，包含了图像，内参，外参
+		View *view = my_sfm_data.views.at(drawLinePicIndex[i]).get();
+		//获取内外参
+		openMVG::cameras::IntrinsicBase * cam = my_sfm_data.GetIntrinsics().at(view->id_intrinsic).get();
+		openMVG::geometry::Pose3 pose = my_sfm_data.GetPoseOrDie(view);
+		string img1Name = my_sfm_data.s_root_path + "/" + view->s_Img_path;
+		//cout << view->s_Img_path;
 #ifdef _WIN32
-    if (drawLines(image_path1.c_str(), image_out_path1.c_str()) == EXIT_FAILURE
-      || drawLines(image_path2.c_str(), image_out_path2.c_str()) == EXIT_FAILURE) {
-      cout << "error occur while get lines in picture" << endl;
-      return EXIT_FAILURE;
-    }
-    cv::Mat imgMat1 = cv::imread(image_out_path1, 1);
-    if (imgMat1.data == NULL) {
-      cout << "Error, images could not be loaded. Please, check their path" << endl;
-      return EXIT_FAILURE;
-    }
-    cv::Mat imgMat2 = cv::imread(image_out_path2, 1);
-    if (imgMat1.data == NULL) {
-      cout << "Error, images could not be loaded. Please, check their path" << endl;
-      return EXIT_FAILURE;
-    }
-    imshow("第一张图片", imgMat1);
-    imshow("第二张图片", imgMat2);
-    cvWaitKey(0);
+		image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + ".jpg";
+		capture(img1Name);
+#else
+		image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + ".jpg";
+		image_path = image_path + to_string(i) + ".jpg";
+#endif // _WIN32
+		cv::Point2d pointOne;
+		{
+			std::fstream in(image_path + ".txt", std::ios::in);
+			in >> pointOne.x >> pointOne.y;
+			in.close();
+		}
+		pointPair.push_back(pointOne);
+
+#ifdef _WIN32
+		//针对每幅图形进行直线提取，并把相关直线保存在drawLineKL
+		//image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0"+to_string(i) + ".jpg";
+		string image_out_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + "_with_lines.jpg";
+		if (image_path.empty()) {
+			return EXIT_FAILURE;
+		}
+		vector<cv::line_descriptor::KeyLine> keylines;
+		keylines = drawLines(image_path.c_str(), image_out_path.c_str());
+		if (keylines.empty()) {
+			cout << "error occur while get lines in picture" << endl;
+			return EXIT_FAILURE;
+		}
+		keyLineArray.push_back(keylines);
+		//显示图像
+		cv::Mat imgMat = cv::imread(image_out_path, 1);
+		if (imgMat.data == NULL) {
+			cout << "Error, images could not be loaded. Please, check their path" << endl;
+			return EXIT_FAILURE;
+		}
+		string windowName = to_string(i) + "图片";
+		imshow(windowName, imgMat);
+		
 #endif // !_WIN32
-    vector<cv::line_descriptor::KeyLine> keylines1;
-    {
-      std::fstream in(image_out_path1 + ".txt", std::ios::in);
-      float start_x, start_y, end_x, end_y;
-      while (in >> start_x && in >> start_y && in >> end_x && in >> end_y) {
-        cv::line_descriptor::KeyLine line;
-        line.startPointX = start_x;
-        line.startPointY = start_y;
-        line.endPointX = end_x;
-        line.endPointY = end_y;
-        keylines1.push_back(line);
-        cout << start_x<<" "<<start_y<<" "<<end_x<<" "<<end_y<< endl;
-      }
-    }
-    vector<cv::line_descriptor::KeyLine> keylines2;
-    {
-      std::fstream in(image_out_path2 + ".txt", std::ios::in);
-      float start_x, start_y, end_x, end_y;
-      while (in >> start_x && in >> start_y && in >> end_x && in >> end_y) {
-        cv::line_descriptor::KeyLine line;
-        line.startPointX = start_x;
-        line.startPointY = start_y;
-        line.endPointX = end_x;
-        line.endPointY = end_y;
-        keylines2.push_back(line);
-        cout << start_x << " " << start_y << " " << end_x << " " << end_y << endl;
-      }
-    }
+	}
+	cvWaitKey(0);
 
-    //(4)计算两张图像的基础矩阵
-    //第一种方法，通过两个相机的内外参进行计算
-    Eigen::Matrix<double, 3, 4> proj1 = cam->get_projective_equivalent(pose),
-      proj2 = cam2->get_projective_equivalent(pose2);
-    openMVG::Vec3 c = my_sfm_data.poses[firstImgId].center();
 
-    cv::Mat promatric1(3, 4, CV_64FC1);
-    cv::Mat promatric2(3, 4, CV_64FC1);
-    for (int i = 0; i < 3; i++) {
-      for (int j = 0; j < 4; j++) {
-        promatric1.at<double>(i, j) = proj1(i, j);
-        promatric2.at<double>(i, j) = proj2(i, j);
-      }
-    }
-    //第一个相机中心
-    cv::Mat C(4, 1, CV_64FC1);
-    for (int i = 0; i < 3; i++) {
-      C.at<double>(i, 0) = c(i, 0);
-    }
-    C.at<double>(3, 0) = 1.0;
+	//(3)用户输入直线对的数量，并输入对应的编号，“-1”表示此处的直线没有被提取出来。
+#ifdef _WIN32
+	int drawLineNum;
+	std::vector<std::vector<int>> drawLineSet;
+	std::cout << "输入想测量的直线的个数：";
+	std::cin >> drawLineNum;
+	std::cout << "输入直线在每张图像上的编号, 若某张图像上此直线没有提取出来，请输入‘-1’:" << endl;
+	//如果某图像上此直线没有提取出来，请输入‘-1’
+	//能够提取出直线的图像张数
+	int validNumOfImgs = drawLinePicNum;
+	for (int i = 0; i < drawLineNum; i++)
+	{
+		std::vector<int> drawLinePair;
+		for (int j = 0; j < drawLinePicNum; j++)
+		{
+			int tmp;
+			std::cin >> tmp;
+			//若输入-1，则有效图像数减1
+			if (tmp == -1) {
+				validNumOfImgs--;
+			}
+			drawLinePair.push_back(tmp);
+		}
+		drawLineSet.push_back(drawLinePair);
+	}
+#else //__linux__
+	////////fstream picTxtin(my_sfm_data.s_root_path + "/../" + "matches/pic.txt", ios::in);
+	////////while (picTxtin >> lineIdx1) {
+	////////	if (lineIdx1 == -1)
+	////////		break;
+	////////	picTxtin >> lineIdx2[lineTp++];
+	////////	if (lineIdx2[lineTp - 1] == -1)
+	////////		break;
+#endif //_WIN32
 
-    cv::Mat ee = promatric2*C;
-    cv::Mat eInvSym = cv::Mat::zeros(3, 3, cv::DataType<double>::type);
-    eInvSym.at<double>(0, 1) = -ee.at<double>(2);
-    eInvSym.at<double>(0, 2) = ee.at<double>(1);
-    eInvSym.at<double>(1, 0) = ee.at<double>(2);
-    eInvSym.at<double>(1, 2) = -ee.at<double>(0);
-    eInvSym.at<double>(2, 0) = -ee.at<double>(1);
-    eInvSym.at<double>(2, 1) = ee.at<double>(0);
-    cv::Mat FundamentEPP = eInvSym*promatric2*promatric1.inv(cv::DECOMP_SVD);
-
-    //(5)在两张小图像中，由用户输入图像对
-    cout << "分别输入图像1与图像2中对应的两个线段编号:";
-    int lineIdx1 = 0; //线1的代号
-    int lineIdx2[10]; //线2的代号
-    int lineTp = 0;
-    vector<openMVG::Vec2 > points_1, points_2;
-    fstream out(txtPath + "/point.txt", ios::out);
-    vector<cv::Point2f> point1;
 
 #ifdef _WIN32
-    while (std::cin >> lineIdx1) {
-      if (lineIdx1 == -1)
-        break;
-      cin >> lineIdx2[lineTp++];
-      if (lineIdx2[lineTp - 1] == -1)
-        break;
+	cv::destroyAllWindows();
 #else //__linux__
-    fstream picTxtin(my_sfm_data.s_root_path + "/../" + "matches/pic.txt", ios::in);
-    while (picTxtin >> lineIdx1) {
-      if (lineIdx1 == -1)
-        break;
-      picTxtin >> lineIdx2[lineTp++];
-      if (lineIdx2[lineTp - 1] == -1)
-        break;
+	////////picTxtin.close();
 #endif //_WIN32
-      double start_x = keylines1[lineIdx1].startPointX + pointOne.x;
-      double start_y = keylines1[lineIdx1].startPointY + pointOne.y;
-      double end_x = keylines1[lineIdx1].endPointX + pointOne.x;
-      double end_y = keylines1[lineIdx1].endPointY + pointOne.y;
-      point1.push_back(cv::Point2f(start_x, start_y));
-      point1.push_back(cv::Point2f(end_x, end_y));
-      cout << setprecision(15) << "##" << showpoint << start_x << " " << start_y << endl;
-      cout << setprecision(15) << "##" << showpoint << end_x << " " << end_y << endl;
-      out << setprecision(15) << "##" << showpoint << start_x << " " << start_y << endl;
-      out << setprecision(15) << "##" << showpoint << end_x << " " << end_y << endl;
-      points_1.push_back(openMVG::Vec2(start_x, start_y));
-      points_1.push_back(openMVG::Vec2(end_x, end_y));
-    }
-#ifdef _WIN32
-    cv::destroyAllWindows();
-#else //__linux__
-    picTxtin.close();
-#endif //_WIN32
-    //(6)设置极线图像的路径与图像名称，保留每次计算的极线图像
-    //创建路径
-    mkdir((my_sfm_data.s_root_path + "/../" + "epipolarImg").c_str());
-    //设置图像名称，注意\\仅在数组中占用一位
-    string epiImg1Path = "epipolarImg/fisrtImg00.jpg";
-    epiImg1Path[20] = firstImgId + '0';
-    epiImg1Path[21] = secondImgId + '0';
-    epiImg1Path = my_sfm_data.s_root_path + "/../" + epiImg1Path;
-    string epiImg2Path = "epipolarImg/secondImg00.jpg";
-    epiImg2Path[21] = firstImgId + '0';
-    epiImg2Path[22] = secondImgId + '0';
-    epiImg2Path = my_sfm_data.s_root_path + "/../" + epiImg2Path;
 
-    //(7)画图像1中的两点
-    cv::Mat imageMat1 = cv::imread(img1Name, 1);
-    for (int i = 0; i < point1.size(); i++) {
-      circle(imageMat1, point1[i], 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
-      if (i % 2)
-        line(imageMat1, point1[i - 1], point1[i], cv::Scalar(255, 0, 0), 1);
-    }
-    imwrite(epiImg1Path, imageMat1);
 
-    //(8)计算极线
-    for (int i = 0; i < point1.size(); i++) {
-      openMVG::Vec2 tmp = cam->get_ud_pixel(points_1[i]);
-      point1[i] = cv::Point2f(tmp.x(), tmp.y());
-    }
-    //采用OPENCV的函数计算极线
-    vector<cv::Vec3f> corresEpilines;
-    computeCorrespondEpilines(point1, 1, FundamentEPP, corresEpilines);
+	/**************3、计算两两图像的顶点对，然后进行三角测量，并计算姿态角**************/
+	//此过程可以一次性选择多张图像，并进行两两图像之间的交汇测量，最终求得的是平均值
+	//创建存储极线的路径
+	mkdir((my_sfm_data.s_root_path + "/../" + "epipolarImg").c_str());
 
-    //(9)画图2中的两点对应的两条极线并计算极线与直线的交点
-    cv::Mat imageMat2 = cv::imread(img2Name, 1);
-    lineTp = 0;
-    for (vector<cv::Vec3f>::const_iterator it = corresEpilines.begin(); it != corresEpilines.end(); ++it) {
-      float a1 = (*it)[0];
-      float b1 = (*it)[1];
-      float c1 = (*it)[2];
-      // draw the epipolar line between first and last column
-      line(imageMat2, cv::Point(0.0, -c1 / b1), cv::Point(imageMat2.cols, -(c1 + a1 * imageMat2.cols) / b1), cv::Scalar(0, 255, 0), 1.5);
+	//俯仰角和水平角的平均值
+	vector<double> averShuiPin(drawLineNum);
+	vector<double> averFuYang(drawLineNum);
+	for (int i = 0; i < drawLineNum; i++)
+	{
+		averFuYang[i] = 0.0;
+		averShuiPin[i] = 0.0;
+	}
+	//为计算GPS存储的目标在虚拟空间中的点
+	std::vector<openMVG::Vec3> points3DForGPS;
+	int tuIndex1, tuIndex2;      //两个图像的索引号
+	for (int idi = 0; idi < drawLinePicNum; idi++)
+	{
+		for (int idj = 0; idj < drawLinePicNum; idj++)
+		{
+			//(1)获得图像的索引号，要是是一样图像，不做处理
+			if (idi == idj)
+				continue;
+			bool flag = false;
+			//若有-1，则跳出该图像计算，此处对不同直线没有区别对待
+			for (int k = 0; k < drawLineNum; k++) {
+				if (drawLineSet[k][idi] == -1 ||drawLineSet[k][idj] ==-1)  {
+					flag = true;
+				}
+			}
+			if (flag == true) {
+				continue;
+			}
+			tuIndex1 = drawLinePicIndex[idi];
+			tuIndex2 = drawLinePicIndex[idj];
 
-      //另一条线的a,b,c
-      int idx2 = lineIdx2[lineTp / 2];
-      lineTp++;
-      float a2 = keylines2[idx2].endPointY - keylines2[idx2].startPointY;    //y2-y1
-      float b2 = keylines2[idx2].startPointX - keylines2[idx2].endPointX;    //x1-x2
-      float c2 = (keylines2[idx2].endPointX + pointTwo.x)*(keylines2[idx2].startPointY + pointTwo.y) - (keylines2[idx2].startPointX + pointTwo.x)*(keylines2[idx2].endPointY + pointTwo.y);    //x2y1-x1y2
-                                                                                             //画出竖直线
-      if (lineTp % 2 == 0) {
-        line(imageMat2, cv::Point(0.0, -c2 / b2), cv::Point(imageMat2.cols, -(c2 + a2 * imageMat2.cols) / b2), cv::Scalar(255, 0, 0), 0.5);
-      }
+			//(2)计算两张图像的基础矩阵
+			//第一种方法，通过两个相机的内外参进行计算
+			View *view1 = my_sfm_data.views.at(tuIndex1).get();
+			openMVG::cameras::IntrinsicBase * cam1 = my_sfm_data.GetIntrinsics().at(view1->id_intrinsic).get();
+			openMVG::geometry::Pose3 pose1 = my_sfm_data.GetPoseOrDie(view1);
 
-      //计算交点
-      cv::Point2d ans;
-      ans.x = (b1*c2 - b2*c1) / (a1*b2 - a2*b1);
-      ans.y = (a2*c1 - a1*c2) / (a1*b2 - a2*b1);
-      cout << setprecision(15) << "!!" << showpoint << ans << endl;
-      out << setprecision(15) << ans.x << " " << ans.y << endl;
-      points_2.push_back(openMVG::Vec2(ans.x, ans.y));
-      circle(imageMat2, ans, 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
-    }
-    imwrite(epiImg2Path, imageMat2);
+			View *view2 = my_sfm_data.views.at(tuIndex2).get();
+			openMVG::cameras::IntrinsicBase * cam2 = my_sfm_data.GetIntrinsics().at(view2->id_intrinsic).get();
+			openMVG::geometry::Pose3 pose2 = my_sfm_data.GetPoseOrDie(view2);
 
-    /**************3、通过顶点对进行三角测量，并计算姿态角**************/
-    //(1)三角测量
-    std::vector<openMVG::Vec3> points3D;
-    for (int i = 0; i < points_1.size(); i++) {
-      cout << "first camera's undistorted pixel coordinate:" << endl << cam->get_ud_pixel(points_1[i]) << endl;
-      cout << "second camera's undistorted pixel coordinate:" << endl << cam2->get_ud_pixel(points_2[i]) << endl;
-      trianObj.add(cam->get_projective_equivalent(pose), cam->get_ud_pixel(points_1[i]));
-      trianObj.add(cam2->get_projective_equivalent(pose2), cam2->get_ud_pixel(points_2[i]));
-      //使用旋转转化矩阵，对三角测量后的顶点进行旋转转化，而不是对所有顶点、相机进行转化
-      points3D.push_back(finalrt*trianObj.compute());
-      trianObj.clear();
-    }
+			Eigen::Matrix<double, 3, 4> proj1 = cam1->get_projective_equivalent(pose1),
+			proj2 = cam2->get_projective_equivalent(pose2);
+			openMVG::Vec3 c = my_sfm_data.poses[tuIndex1].center();
 
-    fstream outPoints(txtPath + "/points3D.txt", ios::out);
-    for (int i = 0; i < points3D.size(); i++) {
-      outPoints << points3D[i].x() << " " << points3D[i].y() << " " << points3D[i].z() << " " << 255 << " " << 0 << " " << 0 << endl;
-    }
-    outPoints.close();
+			cv::Mat promatric1(3, 4, CV_64FC1);
+			cv::Mat promatric2(3, 4, CV_64FC1);
+			for (int i = 0; i < 3; i++) {
+				for (int j = 0; j < 4; j++) {
+					promatric1.at<double>(i, j) = proj1(i, j);
+					promatric2.at<double>(i, j) = proj2(i, j);
+				}
+			}
+			//第一个相机中心
+			cv::Mat C(4, 1, CV_64FC1);
+			for (int i = 0; i < 3; i++) {
+				C.at<double>(i, 0) = c(i, 0);
+			}
+			C.at<double>(3, 0) = 1.0;
+			//计算基础矩阵
+			cv::Mat ee = promatric2*C;
+			cv::Mat eInvSym = cv::Mat::zeros(3, 3, cv::DataType<double>::type);
+			eInvSym.at<double>(0, 1) = -ee.at<double>(2);
+			eInvSym.at<double>(0, 2) = ee.at<double>(1);
+			eInvSym.at<double>(1, 0) = ee.at<double>(2);
+			eInvSym.at<double>(1, 2) = -ee.at<double>(0);
+			eInvSym.at<double>(2, 0) = -ee.at<double>(1);
+			eInvSym.at<double>(2, 1) = ee.at<double>(0);
+			cv::Mat FundamentEPP = eInvSym*promatric2*promatric1.inv(cv::DECOMP_SVD);
+			//cout << idi << idj << endl << FundamentEPP << endl;
 
-    //(2)计算姿态角
-    string anglePath = my_sfm_data.s_root_path + "/../" + "angle";
-    mkdir(anglePath.c_str());
-    string angle = "angle/angle00.txt";
-    angle[11] = firstImgId + '0';
-    angle[12] = secondImgId + '0';
-    fstream outAngle(my_sfm_data.s_root_path + "/../" + angle, ios::out);
-    for (unsigned int i = 0; i < points3D.size(); i = i + 2) {
-      double fuyang = getFuYang(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
-      double shuiping = getShuiPing(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
-      outAngle << setprecision(15) << "俯仰角：" << fuyang << endl << "水平角：" << shuiping << endl;
-      cout << setprecision(15) << "俯仰角：" << fuyang << endl << "水平角：" << shuiping << endl;
-    }
-    outAngle.close();
+			//(3)设置极线图像的路径与图像名称，保留每次计算的极线图像
+			//设置图像名称，注意\\仅在数组中占用一位
+			string epiImg1Path = "epipolarImg/fisrtImg00.jpg";
+			epiImg1Path[20] = tuIndex1 + '0';
+			epiImg1Path[21] = tuIndex2 + '0';
+			epiImg1Path = my_sfm_data.s_root_path + "/../" + epiImg1Path;
+			string epiImg2Path = "epipolarImg/secondImg00.jpg";
+			epiImg2Path[21] = tuIndex1 + '0';
+			epiImg2Path[22] = tuIndex2 + '0';
+			epiImg2Path = my_sfm_data.s_root_path + "/../" + epiImg2Path;
+
+
+			//（4）计算、保存第一张图像的点，并在图像上画出
+			string img1Name = my_sfm_data.s_root_path + "/" + view1->s_Img_path;
+			cv::Mat imageMat1 = cv::imread(img1Name, 1);
+
+			vector<openMVG::Vec2 > points_1, points_2;    //存入点，为后期进行三角测量做准备
+			fstream out(txtPath + "/point.txt", ios::out);
+			//vector<cv::Point2f> point1;
+			for (int k = 0; k < drawLineNum; k++)
+			{
+				cv::line_descriptor::KeyLine keyline = keyLineArray[idi][drawLineSet[k][idi]];
+				double start_x = keyline.startPointX + pointPair[idi].x;
+				double start_y = keyline.startPointY + pointPair[idi].y;
+				double end_x = keyline.endPointX + pointPair[idi].x;
+				double end_y = keyline.endPointY + pointPair[idi].y;
+				//cout << setprecision(15) << "##" << showpoint << start_x << " " << start_y << endl;
+				//cout << setprecision(15) << "##" << showpoint << end_x << " " << end_y << endl;
+				out << setprecision(15) << "##" << showpoint << start_x << " " << start_y << endl;
+				out << setprecision(15) << "##" << showpoint << end_x << " " << end_y << endl;
+				points_1.push_back(openMVG::Vec2(start_x, start_y));
+				points_1.push_back(openMVG::Vec2(end_x, end_y));
+
+				//画图像1的直线和2个端点
+				line(imageMat1, cv::Point2d(start_x,start_y), cv::Point2d(end_x, end_y), cv::Scalar(255, 0, 0), 1);
+				circle(imageMat1, cv::Point2d(start_x, start_y), 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
+				circle(imageMat1, cv::Point2d(end_x, end_y), 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
+			}
+			imwrite(epiImg1Path, imageMat1);
+
+			//(5)计算极线
+			//vector<cv::Point2d> point1;
+			//for (int i = 0; i < points_1.size(); i++) {
+			//	openMVG::Vec2 tmp = cam1->get_ud_pixel(points_1[i]);
+			//	point1.push_back(cv::Point2d(tmp.x(), tmp.y()));
+			//}
+			//cout << "!!!!!!!!!!!!!!!!" << endl;
+			//for (int i = 0; i < point1.size(); i++)
+			//	cout << point1[i] << endl;
+			////采用OPENCV的函数计算极线
+			//vector<cv::Vec3f> corresEpilines;
+			//computeCorrespondEpilines(point1, 1, FundamentEPP, corresEpilines);
+
+			//(5)计算极线
+			vector<cv::Vec3f> corresEpilines;
+			openMVG::Mat3 FF;
+			//把cv：：mat 转化为Eigen
+			for (int i = 0; i < 3; i++)
+			{
+				for (int j = 0; j < 3; j++)
+					FF(i, j) = FundamentEPP.at<double>(i, j);
+			}
+			for (int i = 0; i < points_1.size(); i++)
+			{
+				openMVG::Vec2 l_pt = cam1->get_ud_pixel(points_1[i]);
+				openMVG::Vec3 line = FF*openMVG::Vec3(l_pt(0), l_pt(1), 1.0);
+				cv::Vec3f coline(line(0), line(1), line(2));
+				corresEpilines.push_back(coline);
+			}
+
+
+			//(6)画图2中的两点对应的两条极线并计算极线与直线的交点
+			string img2Name = my_sfm_data.s_root_path + "/" + view2->s_Img_path;
+			cv::Mat imageMat2 = cv::imread(img2Name, 1);
+			//lineTp = 0;
+			for (int k = 0; k < corresEpilines.size(); k++)
+			{
+				float a1 = corresEpilines[k][0];
+				float b1 = corresEpilines[k][1];
+				float c1 = corresEpilines[k][2];
+				// draw the epipolar line between first and last column
+				line(imageMat2, cv::Point(0.0, -c1 / b1), cv::Point(imageMat2.cols, -(c1 + a1 * imageMat2.cols) / b1), cv::Scalar(0, 255, 0), 1.5);
+			
+				//另一条线的a,b,c
+				int tp = k / 2;
+				cv::line_descriptor::KeyLine keyline = keyLineArray[idj][drawLineSet[tp][idj]];
+				float a2 = keyline.endPointY - keyline.startPointY;    //y2-y1
+				float b2 = keyline.startPointX - keyline.endPointX;    //x1-x2
+				float c2 = (keyline.endPointX + pointPair[idj].x)*(keyline.startPointY + pointPair[idj].y) - (keyline.startPointX + pointPair[idj].x)*(keyline.endPointY + pointPair[idj].y);    //x2y1-x1y2
+				//画第二张图上的直线
+				if(k%2==0)
+					line(imageMat2, cv::Point(0.0, -c2 / b2), cv::Point(imageMat2.cols, -(c2 + a2 * imageMat2.cols) / b2), cv::Scalar(255, 0, 0), 0.5);
+			
+				//计算交点
+				cv::Point2d ans;
+				ans.x = (b1*c2 - b2*c1) / (a1*b2 - a2*b1);
+				ans.y = (a2*c1 - a1*c2) / (a1*b2 - a2*b1);
+				//cout << setprecision(15) << "!!" << showpoint << ans << endl;
+				out << setprecision(15) << ans.x << " " << ans.y << endl;
+				points_2.push_back(openMVG::Vec2(ans.x, ans.y));
+				circle(imageMat2, ans, 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
+			}
+			imwrite(epiImg2Path, imageMat2);
+
+
+			//(7)三角测量，并把测量后的点输出
+			std::vector<openMVG::Vec3> points3D;
+			for (int i = 0; i < points_1.size(); i++) {
+				//cout << "first camera's undistorted pixel coordinate:" << endl << cam1->get_ud_pixel(points_1[i]) << endl;
+				//cout << "second camera's undistorted pixel coordinate:" << endl << cam2->get_ud_pixel(points_2[i]) << endl;
+				trianObj.add(cam1->get_projective_equivalent(pose1), cam1->get_ud_pixel(points_1[i]));
+				trianObj.add(cam2->get_projective_equivalent(pose2), cam2->get_ud_pixel(points_2[i]));
+				//使用旋转转化矩阵，对三角测量后的顶点进行旋转转化，而不是对所有顶点、相机进行转化
+				points3D.push_back(finalrt*trianObj.compute());
+				trianObj.clear();
+			}
+			points3DForGPS = points3D;
+			fstream outPoints(txtPath + "/points3D.txt", ios::out);
+			for (int i = 0; i < points3D.size(); i++) {
+				outPoints << points3D[i].x() << " " << points3D[i].y() << " " << points3D[i].z() << " " << 255 << " " << 0 << " " << 0 << endl;
+			}
+			outPoints.close();
+
+			//(8)计算姿态角
+			string anglePath = my_sfm_data.s_root_path + "/../" + "angle";
+			mkdir(anglePath.c_str());
+			string angle = "angle/angle00.txt";
+			angle[11] = tuIndex1 + '0';
+			angle[12] = tuIndex2 + '0';
+			fstream outAngle(my_sfm_data.s_root_path + "/../" + angle, ios::out);
+			cout << "图像索引对：" << idi << " " << idj << endl;
+			for (unsigned int i = 0; i < points3D.size(); i = i + 2) {
+				double fuyang = getFuYang(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
+				double shuiping = getShuiPing(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
+				outAngle << setprecision(15) << "俯仰角：" << fuyang << endl << "水平角：" << shuiping << endl;
+				averShuiPin[i / 2] += shuiping;
+				averFuYang[i / 2] += fuyang;
+				//cout << i / 2 << " " << averFuYang[i / 2] << " " << averFuYang[i / 2] << endl;
+				cout << setprecision(15) << "俯仰角：" << fuyang << endl << "水平角：" << shuiping << endl;
+			}
+			cout << endl;
+			outAngle.close();
+		}
+	}
+
+	//输出平均角度至文件
+	int ucount = validNumOfImgs*(validNumOfImgs - 1);
+	string avgAngle = "angle/averageAngle.txt";
+	fstream outAvgAngle(my_sfm_data.s_root_path + "/../" + avgAngle, ios::out);
+	outAvgAngle << "俯仰角与水平角的平均值：" << endl;
+	cout << "俯仰角与水平角的平均值：" << endl;
+	for (int i = 0; i < drawLineNum; i++)
+	{
+		cout <<"第" <<i << "条直线"<<endl;
+		outAvgAngle << "第" << i << "条直线" << endl;
+		averFuYang[i] = averFuYang[i] / (ucount*1.0);
+		averShuiPin[i] = averShuiPin[i] / (ucount*1.0);
+		cout<< setprecision(15) << "俯仰角：" << averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
+		outAvgAngle << setprecision(15) << "俯仰角：" << averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
+	}
+	outAvgAngle.close();
+
     //使用旋转转化矩阵，对所有其他点云进行旋转，因为要看到最后旋转后的点云姿态，在整个计算过程中，这一步是可选项
     for (Landmarks::iterator iterL = my_sfm_data.structure.begin();
       iterL != my_sfm_data.structure.end(); ++iterL) {
@@ -586,6 +681,7 @@ int main(int argc, char **argv) {
 
     //-- Export to disk computed scene (data & visualizable results)
     std::cout << "...Export SfM_Data to disk." << std::endl;
+	
     Save(my_sfm_data,
       stlplus::create_filespec(sOutDir, "sfm_data", ".json"),
       ESfM_Data(ALL));
@@ -593,6 +689,160 @@ int main(int argc, char **argv) {
     Save(my_sfm_data,
       stlplus::create_filespec(sOutDir, "cloud_and_poses", ".ply"),
       ESfM_Data(ALL));
+
+
+
+	/*******************4、目标GPS与海拔的计算***************/
+	//(1)获取GPS与海拔信息
+	vector<double> tmpGPS;
+	double *longitude = new double[posesNum];
+	double *latitude = new double[posesNum];
+	double *altitude = new double[posesNum];
+	//将有效的poses的横坐标，海拔输入
+	for (int i = 0; i < posesNum; i++) {
+		tmpGPS = allGPS[posesIndex[i]];
+		longitude[i] = tmpGPS[0] * DEG_TO_RAD;
+		latitude[i] = tmpGPS[1] * DEG_TO_RAD;
+		altitude[i] = tmpGPS[2];
+	}
+	//获取海拔的众数
+	double commonZ = altitude[0];
+	for (int i = 0; i < posesNum; i++) {
+		if (Count(altitude, posesNum, altitude[i]) < Count(altitude, posesNum, altitude[i + 1])) {
+			commonZ = altitude[i + 1];
+		}
+	}
+
+	//(2)将WGS84经纬度转化为墨卡托投影坐标系
+	projPJ pj_merc, pj_latlong;
+	if (!(pj_merc = pj_init_plus("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))) {
+		cout << "投影创建失败!" << endl;
+		exit(EXIT_FAILURE);
+	}
+	if (!(pj_latlong = pj_init_plus("+proj=longlat +datum=WGS84 +no_defs"))) {
+		cout << "投影创建失败!" << endl;
+		exit(EXIT_FAILURE);
+	}
+	//经纬度至投影坐标系的转换
+	pj_transform(pj_latlong, pj_merc, posesNum, 1, longitude, latitude, NULL);
+	//经纬度数据为0时，投影后存在很小的小数值，在此忽略
+	for (int i = 0; i < posesNum; i++) {
+		if (longitude[i] < 1e-5) {
+			longitude[i] = 0.0;
+		}
+		if (latitude[i] < 1e-5) {
+			latitude[i] = 0.0;
+		}
+	}
+	//(3)获取虚拟空间中每个相机的X,Y,Z坐标
+	vector<double> xCoor, yCoor, zCoor;
+	for (Poses::iterator iterP = my_sfm_data.poses.begin();
+		iterP != my_sfm_data.poses.end(); ++iterP)
+	{
+		xCoor.push_back(iterP->second.center().x());
+		yCoor.push_back(iterP->second.center().y());
+		zCoor.push_back(iterP->second.center().z());
+	}
+
+	//(4)使用最小二乘法法计算平移T与缩放S
+	/*
+	Eigen::MatrixXd A(posesNum * 2, 3);
+	Eigen::VectorXd b(posesNum * 2, 1);
+	Eigen::VectorXd x(3, 1);
+
+	for (int i = 0; i < posesNum; i++) {
+	A(i * 2, 1) = 1;
+	A(i * 2, 2) = 0;
+	A(i * 2 + 1, 1) = 0;
+	A(i * 2 + 1, 2) = 1;
+	A(i * 2, 0) = xCoor[i];
+	A(i * 2 + 1, 0) = yCoor[i];
+	b(i * 2) = longitude[i];
+	b(i * 2 + 1) = latitude[i];
+	}
+	cout << A << endl;
+	cout << b << endl;
+	cout << x << endl;
+	x = A.colPivHouseholderQr().solve(b);
+	cout << x << endl;
+	*/
+	//使用先验知识计算平移T，以及缩放S，假设用户拍摄间隔的平均距离为0.5m
+	//计算S
+	Eigen::VectorXd x(3, 1);
+	double gap = 0;
+	for (int i = 0; i < posesNum - 1; i++) {
+		gap = gap + sqrt((xCoor[i + 1] - xCoor[i])*(xCoor[i + 1] - xCoor[i]) +
+			(yCoor[i + 1] - yCoor[i])*(yCoor[i + 1] - yCoor[i]));
+	}
+	gap = gap / (posesNum - 1);
+	double S = 0.5 / gap;
+	x(0) = S;
+	//计算T
+	double Tx = 0;
+	double Ty = 0;
+	for (int i = 0; i < posesNum; i++) {
+		Tx += longitude[i] - S*xCoor[i];
+		Ty += latitude[i] - S*yCoor[i];
+	}
+	Tx = Tx / posesNum;
+	Ty = Ty / posesNum;
+	x(1) = Tx;
+	x(2) = Ty;
+
+	//(5)对三角测量出来的目标点，进行T,S转化并输出GPS坐标
+	string GPSPath = my_sfm_data.s_root_path + "/../" + "GPS";
+	mkdir(GPSPath.c_str());
+	string GPSfile = "GPS/GPS.txt";
+	fstream outGPS(my_sfm_data.s_root_path + "/../" + GPSfile, ios::out);
+	double x0 = points3DForGPS[0].x();
+	double y0 = points3DForGPS[0].y();
+	double z0 = points3DForGPS[0].z();
+	x0 = x0 * x(0) + x(1);
+	y0 = y0 * x(0) + x(2);
+	//输出所有平面坐标点
+	outGPS << "投影平面的相机坐标:" << endl;
+	cout << "投影平面的相机坐标:" << endl;
+	for (int i = 0; i < posesNum; i++) {
+		cout << i << ": " << setprecision(15) << longitude[i] << " " << latitude[i] << endl;
+		outGPS << i << ": " << setprecision(15) << longitude[i] << " " << latitude[i] << endl;
+	}
+	delete[] longitude;
+	delete[] latitude;
+	delete[] altitude;
+	cout << "目标坐标" << ": " << x0 << " " << y0 << endl << endl;
+	outGPS << "目标坐标" << ": " << x0 << " " << y0 << endl << endl;
+	//将平面坐标逆转化为GPS
+	pj_transform(pj_merc, pj_latlong, 1, 1, &x0, &y0, NULL);
+	cout << setprecision(15) << "S: " << x[0] << endl;
+	cout << setprecision(15) << "Tx: " << x[1] << endl;
+	cout << setprecision(15) << "Ty: " << x[2] << endl << endl;
+	outGPS << setprecision(15) << "S: " << x[0] << endl;
+	outGPS << setprecision(15) << "Tx: " << x[1] << endl;
+	outGPS << setprecision(15) << "Ty: " << x[2] << endl << endl;
+
+	x0 *= RAD_TO_DEG;
+	y0 *= RAD_TO_DEG;
+	//基本在GPS数据为0时才有此情况
+	if (x0 < 1e-3) {
+		x0 = 0.0;
+		y0 = 0.0;
+	}
+	cout << setprecision(15) << "经度：" << x0 << endl;
+	cout << setprecision(15) << "纬度：" << y0 << endl;
+	outGPS << setprecision(15) << "经度：" << x0 << endl;
+	outGPS << setprecision(15) << "纬度：" << y0 << endl;
+	//(6)计算海拔
+	//获取虚拟空间中相机纵坐标的均值
+	double sumOfZ = 0.0;
+	for (int i = 0; i < posesNum; i++) {
+		sumOfZ += zCoor[i];
+	}
+	sumOfZ /= posesNum;
+	double Z = commonZ + (z0 - sumOfZ) * x[0];
+	cout << setprecision(15) << "海拔：" << Z << endl;
+	outGPS << setprecision(15) << "海拔：" << Z << endl;
+	outGPS.close();
+	system("pause");
     return EXIT_SUCCESS;
   }
   return EXIT_SUCCESS;

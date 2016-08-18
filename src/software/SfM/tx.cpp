@@ -53,7 +53,7 @@ void getRotMatrixXYZ(Eigen::Matrix<double, 3, 3>&  R, double angleZ, double angl
   R = rotX*rotY*rotZ;
 }
 //从文件中获取三个旋转角
-void getAngleFromTxt(double* angles, std::string& path, std::string& identity) {
+void getInfoFromTxt(double* angles, std::string& path, std::string& identity) {
   std::ifstream fin(path, std::ios::in);
   std::string line;
   while (fin >> line) {
@@ -147,37 +147,56 @@ bool sortdes(const cv::line_descriptor::KeyLine &k1, const cv::line_descriptor::
   return k1.lineLength > k2.lineLength;
 }
 
-int drawLines(const char* imageName, const char* outputImgName) {
-  //(3)从路径中读取框选后的小图像，以进行直线提取
-  cv::Mat imgMat1 = cv::imread(imageName, 1);
-  if (imgMat1.data == NULL) {
-    std::cout << "Error, images could not be loaded. Please, check their path" << std::endl;
-    return EXIT_FAILURE;
-  }
-  //直线提取
-  /* create a pointer to a BinaryDescriptor object with default parameters */
-  cv::Ptr<cv::line_descriptor::BinaryDescriptor> bd = cv::line_descriptor::BinaryDescriptor::createBinaryDescriptor();
-  /* compute lines and descriptors */
-  cv::Mat descr1, descr2;
-  std::vector<cv::line_descriptor::KeyLine> keylines;
-  (*bd)(imgMat1, cv::Mat::ones(imgMat1.size(), CV_8UC1), keylines, descr1, false, false);
+double Count(double a[], int size, double x)
+{
+	int i, frequency = 0;
+	for (i = 0; i<size; i++)
+	{
+		//double数的判断不能使用等于
+		if (abs(a[i] - x) <= 0.1)
+			frequency++;
+	}
+	return frequency;
+}
 
-  ///////*选择所需线并显示*/
-  sort(keylines.begin(), keylines.end(), sortdes);
-  size_t limitMax = 10 < keylines.size() ? 10 : keylines.size();
-  for (int i = 0; i < limitMax; i++) {
-    line(imgMat1, CvPoint(keylines[i].startPointX, keylines[i].startPointY), CvPoint(keylines[i].endPointX, keylines[i].endPointY), cv::Scalar(0, 0, 255), 1);
-    std::string id = "0";
-    id[0] = '0' + i;
-    putText(imgMat1, id, CvPoint((keylines[i].startPointX + keylines[i].endPointX) / 2, (keylines[i].startPointY + keylines[i].endPointY) / 2), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255));
-  }
-  imwrite(outputImgName, imgMat1);
-  std::string txtpath = outputImgName;
-  std::fstream out(txtpath + ".txt", std::ios::out);
-  for (size_t i = 0; i < limitMax; i++) {
-    out << keylines[i].startPointX << " " << keylines[i].startPointY << " "
-      << keylines[i].endPointX << " " << keylines[i].endPointY << std::endl;
-  }
-  out.close();
-  return EXIT_SUCCESS;
+std::vector<cv::line_descriptor::KeyLine> drawLines(const char* imageName, const char* outputImgName) {
+	std::vector<cv::line_descriptor::KeyLine> keylines;
+	//(3)从路径中读取框选后的小图像，以进行直线提取
+	cv::Mat imgMat1 = cv::imread(imageName, 1);
+	if (imgMat1.data == NULL) {
+		std::cout << "Error, images could not be loaded. Please, check their path" << std::endl;
+		keylines.clear();
+		return keylines;
+	}
+	//直线提取:方法一
+	///* create a pointer to a BinaryDescriptor object with default parameters */
+	//cv::Ptr<cv::line_descriptor::BinaryDescriptor> bd = cv::line_descriptor::BinaryDescriptor::createBinaryDescriptor();
+	///* compute lines and descriptors */
+	//cv::Mat descr1, descr2;
+	//std::vector<cv::line_descriptor::KeyLine> keylines;
+	// (*bd)(imgMat1, cv::Mat::ones(imgMat1.size(), CV_8UC1), keylines, descr1, false, false);
+
+	//方法二
+	cv::Mat mask = cv::Mat::ones(imgMat1.size(), CV_8UC1);
+	cv::Ptr<cv::line_descriptor::BinaryDescriptor> bd = cv::line_descriptor::BinaryDescriptor::createBinaryDescriptor();
+	bd->detect(imgMat1, keylines, mask);
+
+	///////*选择所需线并显示*/
+	sort(keylines.begin(), keylines.end(), sortdes);
+	size_t limitMax = 10 < keylines.size() ? 10 : keylines.size();
+	for (int i = 0; i < limitMax; i++) {
+		line(imgMat1, CvPoint(keylines[i].startPointX, keylines[i].startPointY), CvPoint(keylines[i].endPointX, keylines[i].endPointY), cv::Scalar(0, 0, 255), 1);
+		std::string id = "0";
+		id[0] = '0' + i;
+		putText(imgMat1, id, CvPoint((keylines[i].startPointX + keylines[i].endPointX) / 2, (keylines[i].startPointY + keylines[i].endPointY) / 2), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255));
+	}
+	imwrite(outputImgName, imgMat1);
+	//std::string txtpath = outputImgName;
+	//std::fstream out(txtpath + ".txt", std::ios::out);
+	//for (size_t i = 0; i < limitMax; i++) {
+	//  out << keylines[i].startPointX << " " << keylines[i].startPointY << " "
+	//    << keylines[i].endPointX << " " << keylines[i].endPointY << std::endl;
+	//}
+	//out.close();
+	return keylines;
 }

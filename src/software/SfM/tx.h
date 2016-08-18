@@ -8,17 +8,19 @@
 #include <opencv2/highgui.hpp>
 #include "opencv2/line_descriptor.hpp"
 
+
 void RotationMatrixToEulerAnglesXYZ(Eigen::Matrix<double, 3, 3>&  R, double* euler);
 void RotationMatrixToEulerAnglesZXY(Eigen::Matrix<double, 3, 3>& R, double *euler);
 void RotationMatrixToEulerAnglesZYX(Eigen::Matrix<double, 3, 3>&  R, double* euler);
 void getRotMatrixZXY(Eigen::Matrix<double, 3, 3>&  R, double angleZ, double angleY, double angleX);
 void getRotMatrixZYX(Eigen::Matrix<double, 3, 3>&  R, double angleZ, double angleY, double angleX);
 void getRotMatrixXYZ(Eigen::Matrix<double, 3, 3>&  R, double angleZ, double angleY, double angleX);
-void getAngleFromTxt(double* angles, std::string& path, std::string& identity);
+void getInfoFromTxt(double* angles, std::string& path, std::string& identity);
 void getRotationMatrix(Eigen::Matrix<double, 3, 3>& R, std::string& path);
 void getRemappedRotationMatrix(Eigen::Matrix<double, 3, 3>& R, std::string& path);
 double getDistance(double tx, double ty, double tz, double rx, double ry, double rz);
 double getFuYang(double tx, double ty, double tz, double rx, double ry, double rz);
 double getShuiPing(double tx, double ty, double tz, double rx, double ry, double rz);
 bool sortdes(const cv::line_descriptor::KeyLine &k1, const cv::line_descriptor::KeyLine &k2);
-int drawLines(const char* imageName, const char* outputImgName);
+double Count(double a[], int size, double x);
+std::vector<cv::line_descriptor::KeyLine> drawLines(const char* imageName, const char* outputImgName);
