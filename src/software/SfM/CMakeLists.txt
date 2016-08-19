@@ -80,20 +80,17 @@ if(NOT OpenMVG_BUILD_TX_MINIMUM)
     # Installation rules
   SET_PROPERTY(TARGET openMVG_main_IncrementalSfM PROPERTY FOLDER OpenMVG/software)
   INSTALL(TARGETS openMVG_main_IncrementalSfM DESTINATION bin/)
-endif(NOT OpenMVG_BUILD_TX_MINIMUM)
+  ADD_EXECUTABLE(openMVG_main_GlobalSfM main_GlobalSfM.cpp)
+  TARGET_LINK_LIBRARIES(openMVG_main_GlobalSfM
+    openMVG_system
+    openMVG_image
+    openMVG_features
+    openMVG_sfm
+    stlplus
+    )
+  SET_PROPERTY(TARGET openMVG_main_GlobalSfM PROPERTY FOLDER OpenMVG/software)
+  INSTALL(TARGETS openMVG_main_GlobalSfM DESTINATION bin/)
 
-ADD_EXECUTABLE(openMVG_main_GlobalSfM main_GlobalSfM.cpp)
-TARGET_LINK_LIBRARIES(openMVG_main_GlobalSfM
-  openMVG_system
-  openMVG_image
-  openMVG_features
-  openMVG_sfm
-  stlplus
-  )
-SET_PROPERTY(TARGET openMVG_main_GlobalSfM PROPERTY FOLDER OpenMVG/software)
-INSTALL(TARGETS openMVG_main_GlobalSfM DESTINATION bin/)
-
-if(NOT OpenMVG_BUILD_TX_MINIMUM)
   ADD_EXECUTABLE(openMVG_main_ConvertSfM_DataFormat main_ConvertSfM_DataFormat.cpp)
   TARGET_LINK_LIBRARIES(openMVG_main_ConvertSfM_DataFormat
     openMVG_system
@@ -134,9 +131,7 @@ if(NOT OpenMVG_BUILD_TX_MINIMUM)
     )
   SET_PROPERTY(TARGET openMVG_main_ComputeSfM_DataColor PROPERTY FOLDER OpenMVG/software)
   INSTALL(TARGETS openMVG_main_ComputeSfM_DataColor DESTINATION bin/)
-endif(NOT OpenMVG_BUILD_TX_MINIMUM)
 
-if(NOT OpenMVG_BUILD_TX_MINIMUM)
 ###
 # SfM tools to visualize feature tracking data
 ###
