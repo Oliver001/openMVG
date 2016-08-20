@@ -10,3 +10,6 @@
 [submodule "src/toolchains"]
 	path = src/toolchains
 	url = https://github.com/oliver001/android-cmake.git
+[submodule "src/dependencies/proj.4"]
+	path = src/dependencies/proj.4
+	url = https://github.com/Oliver001/proj.4.git
