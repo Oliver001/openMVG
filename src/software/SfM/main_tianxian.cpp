@@ -575,6 +575,7 @@ int main(int argc, char **argv) {
 				corresEpilines.push_back(coline);
 			}
 
+			
 
 			//(6)画图2中的两点对应的两条极线并计算极线与直线的交点
 			string img2Name = my_sfm_data.s_root_path + "/" + view2->s_Img_path;
@@ -594,9 +595,17 @@ int main(int argc, char **argv) {
 				float a2 = keyline.endPointY - keyline.startPointY;    //y2-y1
 				float b2 = keyline.startPointX - keyline.endPointX;    //x1-x2
 				float c2 = (keyline.endPointX + pointPair[idj].x)*(keyline.startPointY + pointPair[idj].y) - (keyline.startPointX + pointPair[idj].x)*(keyline.endPointY + pointPair[idj].y);    //x2y1-x1y2
-				//画第二张图上的直线
-				if(k%2==0)
-					line(imageMat2, cv::Point(0.0, -c2 / b2), cv::Point(imageMat2.cols, -(c2 + a2 * imageMat2.cols) / b2), cv::Scalar(255, 0, 0), 0.5);
+				
+																																														 //画第二张图上的直线
+				if (k % 2 == 0)
+				{
+					//cout << tp << " " << a2 << " " << b2 << " " << c2 << endl;
+					
+					line(imageMat2, cv::Point(-c2 / a2, 0.0), cv::Point(-(b2*imageMat2.rows + c2) / a2, imageMat2.rows), cv::Scalar(255, 0, 0), 0.5);
+					//cv::circle(imageMat2, cv::Point(-c2/a2, 0.0), 20, cv::Scalar(0, 0, 255), 10, 8, 0);
+					//cv::circle(imageMat2, cv::Point(-(b2*imageMat2.rows + c2) / a2, imageMat2.rows), 20, cv::Scalar(0, 0, 255), 10, 8, 0);
+				}
+					
 			
 				//计算交点
 				cv::Point2d ans;
@@ -639,11 +648,11 @@ int main(int argc, char **argv) {
 			for (unsigned int i = 0; i < points3D.size(); i = i + 2) {
 				double fuyang = getFuYang(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
 				double shuiping = getShuiPing(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
-				outAngle << setprecision(15) << "俯仰角：" << fuyang << endl << "水平角：" << shuiping << endl;
+				outAngle << setprecision(15) << "俯仰角：" << 90.0-fuyang << endl << "水平角：" << shuiping << endl;
 				averShuiPin[i / 2] += shuiping;
 				averFuYang[i / 2] += fuyang;
 				//cout << i / 2 << " " << averFuYang[i / 2] << " " << averFuYang[i / 2] << endl;
-				cout << setprecision(15) << "俯仰角：" << fuyang << endl << "水平角：" << shuiping << endl;
+				cout << setprecision(15) << "俯仰角：" << 90.0-fuyang << endl << "水平角：" << shuiping << endl;
 			}
 			cout << endl;
 			outAngle.close();
@@ -662,8 +671,8 @@ int main(int argc, char **argv) {
 		outAvgAngle << "第" << i << "条直线" << endl;
 		averFuYang[i] = averFuYang[i] / (ucount*1.0);
 		averShuiPin[i] = averShuiPin[i] / (ucount*1.0);
-		cout<< setprecision(15) << "俯仰角：" << averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
-		outAvgAngle << setprecision(15) << "俯仰角：" << averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
+		cout<< setprecision(15) << "俯仰角：" << 90.0-averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
+		outAvgAngle << setprecision(15) << "俯仰角：" << 90.0-averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
 	}
 	outAvgAngle.close();
 
