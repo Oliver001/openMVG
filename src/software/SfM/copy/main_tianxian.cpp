@@ -311,7 +311,7 @@ int main(int argc, char **argv) {
 
 
     /*********2、通过直线提取与极限约束获取顶点对以进行三角测量****************/
-    
+    openMVG::Triangulation trianObj;
 
 	//(1)输出有效的、可以进行三角测量的索引号,让用户选择，并输入想要测量的张数，和每张的索引号
 	std::cout << "有效的索引号:";
@@ -445,9 +445,6 @@ int main(int argc, char **argv) {
 	//为计算GPS存储的目标在虚拟空间中的点
 	std::vector<openMVG::Vec3> points3DForGPS;
 	int tuIndex1, tuIndex2;      //两个图像的索引号
-	//代表每次计算出来的水平向量，用以计算平均水平角和水平角的标准差
-	std::vector<cv::Vec2d> horizontalVecs;
-	std::vector<double> verticalAngles;
 	for (int idi = 0; idi < drawLinePicNum; idi++)
 	{
 		for (int idj = 0; idj < drawLinePicNum; idj++)
@@ -623,9 +620,7 @@ int main(int argc, char **argv) {
 
 
 			//(7)三角测量，并把测量后的点输出
-			openMVG::Triangulation trianObj;
 			std::vector<openMVG::Vec3> points3D;
-			
 			for (int i = 0; i < points_1.size(); i++) {
 				//cout << "first camera's undistorted pixel coordinate:" << endl << cam1->get_ud_pixel(points_1[i]) << endl;
 				//cout << "second camera's undistorted pixel coordinate:" << endl << cam2->get_ud_pixel(points_2[i]) << endl;
@@ -636,18 +631,11 @@ int main(int argc, char **argv) {
 				trianObj.clear();
 			}
 			points3DForGPS = points3D;
-
-			//将测量出的空间点写入文件
-			string points3DPath = my_sfm_data.s_root_path + "/../" + "points3D";
-			mkdir(points3DPath.c_str());
-			string points3Dfile = "points3D/3Dpoints00.txt";
-			points3Dfile[17] = tuIndex1 + '0';
-			points3Dfile[18] = tuIndex2 + '0';
-			fstream outPoints3D(my_sfm_data.s_root_path + "/../" + points3Dfile, ios::out);
+			fstream outPoints(txtPath + "/points3D.txt", ios::out);
 			for (int i = 0; i < points3D.size(); i++) {
-				outPoints3D << points3D[i].x() << " " << points3D[i].y() << " " << points3D[i].z() << " " << 255 << " " << 0 << " " << 0 << endl;
+				outPoints << points3D[i].x() << " " << points3D[i].y() << " " << points3D[i].z() << " " << 255 << " " << 0 << " " << 0 << endl;
 			}
-			outPoints3D.close();
+			outPoints.close();
 
 			//(8)计算姿态角
 			string anglePath = my_sfm_data.s_root_path + "/../" + "angle";
@@ -659,85 +647,33 @@ int main(int argc, char **argv) {
 			cout << "图像索引对：" << idi << " " << idj << endl;
 			for (unsigned int i = 0; i < points3D.size(); i = i + 2) {
 				double fuyang = getFuYang(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
-				verticalAngles.push_back(fuyang);
 				double shuiping = getShuiPing(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
-				//计算水平矢量，以进行平均水平角和标准差的计算
-				double vecX, vecY;
-				//找到始点与终点，终点为z值更大的那个点
-				if (points3D[i].z() >= points3D[i + 1].z()) {
-					vecX = points3D[i].x() - points3D[i + 1].x();
-					vecY = points3D[i].y() - points3D[i + 1].y();
-				}
-				else {
-					vecX = points3D[i + 1].x() - points3D[i].x();
-					vecY = points3D[i + 1].y() - points3D[i].y();
-				}
-				//添加归一化的向量到容器中
-				horizontalVecs.push_back(cv::Vec2d(vecX / (sqrt(vecX * vecX + vecY * vecY)), vecY / (sqrt(vecX * vecX + vecY * vecY))));
-				cout << setprecision(15) << "俯仰角：" << fuyang << endl << "水平角：" << shuiping << endl;
-				outAngle << setprecision(15) << "俯仰角：" << fuyang << endl << "水平角：" << shuiping << endl;
-				
+				outAngle << setprecision(15) << "俯仰角：" << 90.0-fuyang << endl << "水平角：" << shuiping << endl;
+				averShuiPin[i / 2] += shuiping;
+				averFuYang[i / 2] += fuyang;
+				//cout << i / 2 << " " << averFuYang[i / 2] << " " << averFuYang[i / 2] << endl;
+				cout << setprecision(15) << "俯仰角：" << 90.0-fuyang << endl << "水平角：" << shuiping << endl;
 			}
 			cout << endl;
 			outAngle.close();
 		}
 	}
 
-	
-	//for (int i = 0; i < drawLineNum; i++)
-	//{
-	//	cout <<"第" <<i << "条直线"<<endl;
-	//	outAvgAngle << "第" << i << "条直线" << endl;
-	//	averFuYang[i] = averFuYang[i] / (ucount*1.0);
-	//	//averShuiPin[i] = averShuiPin[i] / (ucount*1.0);
-	//	averShuiPin[i] = getShuiPing(shuipingVec[0], shuipingVec[1], 1.0, 0.0, 0.0, 0.0);
-	//	cout<< setprecision(15) << "俯仰角：" << averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
-	//	outAvgAngle << setprecision(15) << "俯仰角：" << averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
-	//}
-
-
-	//计算俯仰角平均值与标准差
-	double avgHor = 0.0, avgVer = 0.0, deviationHor = 0.0, deviationVer = 0.0;
-	for (int i = 0; i < verticalAngles.size(); i++) {
-		avgVer += verticalAngles[i];
-	}
-	avgVer /= verticalAngles.size();
-	
-	for (int i = 0; i < verticalAngles.size(); i++) {
-		deviationVer += (verticalAngles[i] - avgVer) * (verticalAngles[i] - avgVer);
-	}
-	deviationVer = sqrt(deviationVer / verticalAngles.size());
-
-	//计算水平角的平均值与标准差
-	cv::Vec2d avgVec(0.0,0.0);
-	//将归一化的向量相加
-	for (int i = 0; i < horizontalVecs.size(); i++) {
-		avgVec[0] += horizontalVecs[i][0];
-		avgVec[1] += horizontalVecs[i][1];
-	}
-	//获取平均水平角
-	avgHor = getShuiPing(avgVec[0], avgVec[1], 1.0, 0.0, 0.0, 0.0);
-	//计算水平角标准差
-	double theta;
-	for (int i = 0; i < horizontalVecs.size(); i++) {
-		theta = (180.0 / M_PI) * acos((avgVec[0] * horizontalVecs[i][0] + avgVec[1] * horizontalVecs[i][1]) /
-			(sqrt(avgVec[0] * avgVec[0] + avgVec[1] * avgVec[1])*sqrt(horizontalVecs[i][0] * horizontalVecs[i][0] + horizontalVecs[i][1] * horizontalVecs[i][1])));
-		deviationHor += theta * theta;
-	}
-	deviationHor = sqrt(deviationHor / horizontalVecs.size());
-
 	//输出平均角度至文件
+	int ucount = validNumOfImgs*(validNumOfImgs - 1);
 	string avgAngle = "angle/averageAngle.txt";
 	fstream outAvgAngle(my_sfm_data.s_root_path + "/../" + avgAngle, ios::out);
 	outAvgAngle << "俯仰角与水平角的平均值：" << endl;
 	cout << "俯仰角与水平角的平均值：" << endl;
-	cout << "第0条直线" << endl;
-	outAvgAngle << "第0条直线" << endl;
-	//输出信息
-	cout << setprecision(15) << "俯仰角：" << avgVer << endl << "标准差：" << deviationVer << endl;
-	cout << setprecision(15) << "水平角：" << avgHor << endl << "标准差：" << deviationHor << endl;
-	outAvgAngle << setprecision(15) << "俯仰角：" << avgVer << endl << "标准差：" << deviationVer << endl;
-	outAvgAngle << setprecision(15) << "水平角：" << avgHor << endl << "标准差：" << deviationHor << endl;
+	for (int i = 0; i < drawLineNum; i++)
+	{
+		cout <<"第" <<i << "条直线"<<endl;
+		outAvgAngle << "第" << i << "条直线" << endl;
+		averFuYang[i] = averFuYang[i] / (ucount*1.0);
+		averShuiPin[i] = averShuiPin[i] / (ucount*1.0);
+		cout<< setprecision(15) << "俯仰角：" << 90.0-averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
+		outAvgAngle << setprecision(15) << "俯仰角：" << 90.0-averFuYang[i] << endl << "水平角：" << averShuiPin[i] << endl;
+	}
 	outAvgAngle.close();
 
     //使用旋转转化矩阵，对所有其他点云进行旋转，因为要看到最后旋转后的点云姿态，在整个计算过程中，这一步是可选项
@@ -915,7 +851,7 @@ int main(int argc, char **argv) {
 	cout << setprecision(15) << "海拔：" << Z << endl;
 	outGPS << setprecision(15) << "海拔：" << Z << endl;
 	outGPS.close();
-	std::system("pause");
+	system("pause");
     return EXIT_SUCCESS;
   }
   return EXIT_SUCCESS;

@@ -108,14 +108,14 @@ double getDistance(double tx, double ty, double tz, double rx, double ry, double
 
 //计算俯仰角
 double getFuYang(double tx, double ty, double tz, double rx, double ry, double rz) {
-  return asin(getDistance(tx, ty, tz, tx, ty, rz) / getDistance(tx, ty, tz, rx, ry, rz))*180.0 / M_PI;
+  return (90.0 - asin(getDistance(tx, ty, tz, tx, ty, rz) / getDistance(tx, ty, tz, rx, ry, rz))*180.0 / M_PI);
 }
 
 //计算水平角
 double getShuiPing(double tx, double ty, double tz, double rx, double ry, double rz) {
   double angle;
   double vecX, vecY;
-  //tz为终点的纵坐标，rz为始点的纵坐标
+  //tz为终点的z坐标，rz为始点的z坐标
   if (tz >= rz) {
     //获取到矢量
     vecX = tx - rx;
@@ -129,11 +129,11 @@ double getShuiPing(double tx, double ty, double tz, double rx, double ry, double
     }
     return angle;
   }
-  //rz为终点的纵坐标，tz为始点的纵坐标
+  //rz为终点的z坐标，tz为始点的z坐标
   //获取到矢量
   vecX = rx - tx;
   vecY = ry - ty;
-  if (tx <= rx) {
+  if (tx <= rx) { 
     //r在t的右边，终点在始点的右边
     angle = (acos((0 * vecX + 1 * vecY) / (1 * sqrt(vecX * vecX + vecY * vecY))))* 180.0 / M_PI;
   } else {
@@ -147,7 +147,7 @@ bool sortdes(const cv::line_descriptor::KeyLine &k1, const cv::line_descriptor::
   return k1.lineLength > k2.lineLength;
 }
 
-double Count(double a[], int size, double x)
+int Count(double a[], int size, double x)
 {
 	int i, frequency = 0;
 	for (i = 0; i<size; i++)
