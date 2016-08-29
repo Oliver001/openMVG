@@ -436,13 +436,13 @@ int main(int argc, char **argv) {
 	mkdir((my_sfm_data.s_root_path + "/../" + "epipolarImg").c_str());
 
 	//俯仰角和水平角的平均值
-	vector<double> averShuiPin(drawLineNum);
-	vector<double> averFuYang(drawLineNum);
-	for (int i = 0; i < drawLineNum; i++)
-	{
-		averFuYang[i] = 0.0;
-		averShuiPin[i] = 0.0;
-	}
+	//vector<double> averShuiPin(drawLineNum);
+	//vector<double> averFuYang(drawLineNum);
+	//for (int i = 0; i < drawLineNum; i++)
+	//{
+	//	averFuYang[i] = 0.0;
+	//	averShuiPin[i] = 0.0;
+	//}
 	//为计算GPS存储的目标在虚拟空间中的点
 	std::vector<openMVG::Vec3> points3DForGPS;
 	int tuIndex1, tuIndex2;      //两个图像的索引号
