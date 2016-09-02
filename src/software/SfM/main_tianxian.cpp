@@ -224,15 +224,16 @@ int main(int argc, char **argv) {
   /*********2、通过直线提取与极限约束获取顶点对以进行三角测量****************/
   // (1)输出有效的、可以进行三角测量的索引号,让
   // 用户选择，并输入想要测量的张数，和每张的索引号
-  std::cout << "有效的索引号:";
-  for (size_t i = 0; i < posesIndex.size(); i++)
-    cout << posesIndex[i] << " ";
-  std::cout << endl;
   //用户想进行提取的图像的数量
   int drawLinePicNum;
   //要进行提取图像的索引号
   vector<int> drawLinePicIndex;
   vector<cv::Point2d> pointPair;
+
+  std::cout << "有效的索引号:";
+  for (size_t i = 0; i < posesIndex.size(); i++)
+    cout << posesIndex[i] << " ";
+  std::cout << endl;
   std::cout << "输入要匹配的张数：";
   std::cin >> drawLinePicNum;
   std::cout << "输入每张的索引号(每张的索引号，不能一样)：";
@@ -241,35 +242,22 @@ int main(int argc, char **argv) {
     std::cin >> tmp;
     drawLinePicIndex.push_back(tmp);
   }
-
   //(2)处理每一张图像
   vector<vector<cv::line_descriptor::KeyLine>> keyLineArray;
   for (int i = 0; i < drawLinePicNum; i++) {
     //获取虚拟空间中每一张图像的view，包含了图像，内参，外参
     View *view = my_sfm_data.views.at(drawLinePicIndex[i]).get();
-    //获取内外参
-    /*openMVG::cameras::IntrinsicBase * cam = my_sfm_data.GetIntrinsics().at(view->id_intrinsic).get();
-    openMVG::geometry::Pose3 pose = my_sfm_data.GetPoseOrDie(view);*/
     string img1Name = my_sfm_data.s_root_path + "/" + view->s_Img_path;
-    //cout << view->s_Img_path;
-#ifdef _WIN32
+
     image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + ".jpg";
     capture(img1Name);
-#else
-    image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + ".jpg";
-    image_path = image_path + to_string(i) + ".jpg";
-#endif // _WIN32
+
     cv::Point2d pointOne;
-    {
-      std::fstream in(image_path + ".txt", std::ios::in);
-      in >> pointOne.x >> pointOne.y;
-      in.close();
-    }
+    std::fstream in(image_path + ".txt", std::ios::in);
+    in >> pointOne.x >> pointOne.y;
+    in.close();
     pointPair.push_back(pointOne);
 
-#ifdef _WIN32
-    //针对每幅图形进行直线提取，并把相关直线保存在drawLineKL
-    //image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0"+to_string(i) + ".jpg";
     string image_out_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + "_with_lines.jpg";
     if (image_path.empty()) {
       return EXIT_FAILURE;
@@ -289,15 +277,11 @@ int main(int argc, char **argv) {
     }
     string windowName = to_string(i) + "图片";
     imshow(windowName, imgMat);
-
-#endif // !_WIN32
   }
   cvWaitKey(0);
 
   //(3)用户输入直线对的数量，并输入对应的编号，“-1”表示此处的直线没有被提取出来。
-#ifdef _WIN32
   std::vector<int> drawLinePair;
-
   std::cout << "输入直线在每张图像上的编号, 若某张图像上此直线没有提取出来，请输入‘-1’:" << endl;
   //如果某图像上此直线没有提取出来，请输入‘-1’
   //能够提取出直线的图像张数
@@ -311,23 +295,7 @@ int main(int argc, char **argv) {
     }
     drawLinePair.push_back(tmp);
   }
-
-#else //__linux__
-  ////////fstream picTxtin(my_sfm_data.s_root_path + "/../" + "matches/pic.txt", ios::in);
-  ////////while (picTxtin >> lineIdx1) {
-  ////////	if (lineIdx1 == -1)
-  ////////		break;
-  ////////	picTxtin >> lineIdx2[lineTp++];
-  ////////	if (lineIdx2[lineTp - 1] == -1)
-  ////////		break;
-#endif //_WIN32
-
-#ifdef _WIN32
   cv::destroyAllWindows();
-#else //__linux__
-  ////////picTxtin.close();
-#endif //_WIN32
-
   /**************3、计算两两图像的顶点对，然后进行三角测量，并计算姿态角**************/
   //此过程可以一次性选择多张图像，并进行两两图像之间的交汇测量，最终求得的是平均值
   //创建存储极线的路径
@@ -470,7 +438,6 @@ int main(int argc, char **argv) {
         circle(imageMat2, ans, 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
       }
       imwrite(epiImg2Path, imageMat2);
-
 
       //(7)三角测量，并把测量后的点输出
       openMVG::Triangulation trianObj;
