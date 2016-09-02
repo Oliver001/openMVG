@@ -98,10 +98,6 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-
-
-
-
   /*********************1、旋转转化矩阵的计算********************/
   //(1)获取SFM DATA
   SfM_Data my_sfm_data;
@@ -176,7 +172,7 @@ int main(int argc, char **argv) {
       for (int i = 0; i < size_of_eulerVector; i += 3) {
         positiveNum += (eulerVector[i + j] > 0);
       }
-      if (positiveNum < posesNum)
+      if (positiveNum < posesNum) {
         if (positiveNum < posesNum >> 1) {
           for (int i = 0; i < size_of_eulerVector; i += 3) {
             eulerVector[i + j] = abs(eulerVector[i + j]);
@@ -186,6 +182,7 @@ int main(int argc, char **argv) {
             eulerVector[i + j] = -abs(eulerVector[i + j]);
           }
         }
+      }
     }
   }
   //(7)将旋转转化矩阵分解出的三个旋转角求平均值，并重构成最优的旋转矩阵
@@ -224,18 +221,17 @@ int main(int argc, char **argv) {
   tr0 << "final_rt:" << finalrt << endl;
   tr0.close();
 
-
-
   /*********2、通过直线提取与极限约束获取顶点对以进行三角测量****************/
-
-
-//(1)输出有效的、可以进行三角测量的索引号,让用户选择，并输入想要测量的张数，和每张的索引号
+  // (1)输出有效的、可以进行三角测量的索引号,让
+  // 用户选择，并输入想要测量的张数，和每张的索引号
   std::cout << "有效的索引号:";
   for (size_t i = 0; i < posesIndex.size(); i++)
     cout << posesIndex[i] << " ";
   std::cout << endl;
-  int drawLinePicNum;                   //用户想进行提取的图像的数量
-  vector<int> drawLinePicIndex;         //要进行提取图像的索引号
+  //用户想进行提取的图像的数量
+  int drawLinePicNum;
+  //要进行提取图像的索引号
+  vector<int> drawLinePicIndex;
   vector<cv::Point2d> pointPair;
   std::cout << "输入要匹配的张数：";
   std::cin >> drawLinePicNum;
@@ -245,7 +241,6 @@ int main(int argc, char **argv) {
     std::cin >> tmp;
     drawLinePicIndex.push_back(tmp);
   }
-
 
   //(2)处理每一张图像
   vector<vector<cv::line_descriptor::KeyLine>> keyLineArray;
@@ -299,7 +294,6 @@ int main(int argc, char **argv) {
   }
   cvWaitKey(0);
 
-
   //(3)用户输入直线对的数量，并输入对应的编号，“-1”表示此处的直线没有被提取出来。
 #ifdef _WIN32
   std::vector<int> drawLinePair;
@@ -328,13 +322,11 @@ int main(int argc, char **argv) {
   ////////		break;
 #endif //_WIN32
 
-
 #ifdef _WIN32
   cv::destroyAllWindows();
 #else //__linux__
   ////////picTxtin.close();
 #endif //_WIN32
-
 
   /**************3、计算两两图像的顶点对，然后进行三角测量，并计算姿态角**************/
   //此过程可以一次性选择多张图像，并进行两两图像之间的交汇测量，最终求得的是平均值
@@ -352,7 +344,6 @@ int main(int argc, char **argv) {
       //(1)获得图像的索引号，要是是一样图像，不做处理
       if (idi == idj)
         continue;
-
       //若有-1，则跳出该图像计算，此处对不同直线没有区别对待
       if (drawLinePair[idi] == -1 || drawLinePair[idj] == -1)
         continue;
@@ -601,8 +592,6 @@ int main(int argc, char **argv) {
   Save(my_sfm_data,
     stlplus::create_filespec(sOutDir, "cloud_and_poses", ".ply"),
     ESfM_Data(ALL));
-
-
 
   /*******************4、目标GPS与海拔的计算***************/
   //(1)获取GPS与海拔信息
