@@ -26,6 +26,7 @@ ENDIF()
 # ==============================================================================
 # OpenMVG build options
 # ==============================================================================
+OPTION(OpenMVG_BUILD_TIANXIAN "Build TIANXIAN project" ON)
 OPTION(OpenMVG_BUILD_SHARED "Build OpenMVG shared libs" OFF)
 OPTION(OpenMVG_BUILD_TESTS "Build OpenMVG tests" OFF)
 OPTION(OpenMVG_BUILD_DOC "Build OpenMVG documentation" ON)
@@ -192,6 +193,21 @@ IF (OpenMVG_BUILD_OPENGL_EXAMPLES)
   SET_PROPERTY(TARGET glfw PROPERTY FOLDER OpenMVG/3rdParty/glfw)
 ENDIF (OpenMVG_BUILD_OPENGL_EXAMPLES)
 
+IF (OpenMVG_BUILD_TIANXIAN)
+  SET(BUILD_CS2CS   OFF CACHE BOOL "Do not build the proj CS2CS programs")
+  SET(BUILD_GEOD    OFF CACHE BOOL "Do not build the proj GEOD programs")
+  SET(BUILD_NAD2BIN OFF CACHE BOOL "Do not build the proj NAD2BIN programs")
+  SET(BUILD_PROJ    OFF CACHE BOOL "Do not generate the proj execute programs")
+  SET(PROJ4_TESTS   OFF CACHE BOOL "Do not generate the proj tests programs")
+  SET(PROJ_INSTALL  OFF CACHE BOOL "Do not generate the PROJ installation target")
+  ADD_SUBDIRECTORY(dependencies/proj.4)
+  SET(PROJ_INCLUDE_DIRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/dependencies/proj.4/src/
+  )
+  INCLUDE_DIRECTORIES(${PROJ_INCLUDE_DIRS})
+  SET_PROPERTY(TARGET proj PROPERTY FOLDER OpenMVG/3rdParty/proj.4)
+  SET(PROJ_LIBRARY PROJ)
+ENDIF (OpenMVG_BUILD_TIANXIAN)
 #- Mosek (linear programming interface)
 #===============================================================================
 find_host_package(Mosek)
@@ -411,6 +427,7 @@ SET(OpenMVG_INCLUDE_DIRS
   ${COINUTILS_INCLUDE_DIRS}
   ${CLP_INCLUDE_DIRS}
   ${OSI_INCLUDE_DIRS}
+  ${PROJ_INCLUDE_DIRS}
   CACHE PATH "include directories for openMVG and its dependencies"
 )
 
@@ -630,4 +647,3 @@ CONFIGURE_FILE("${CMAKE_SOURCE_DIR}/cmakeFindModules/OpenMVGConfig.cmake.in"
 
 INSTALL(FILES "${CMAKE_CURRENT_BINARY_DIR}/OpenMVGConfig.cmake"
         DESTINATION share/openMVG/cmake)
-

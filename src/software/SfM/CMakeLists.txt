@@ -337,10 +337,12 @@ if(NOT OpenMVG_BUILD_TX_MINIMUM)
   CONFIGURE_FILE(${OPENMVG_TUTORIAL_IN_FILE}
     "${CMAKE_CURRENT_BINARY_DIR}/SfM_SequentialPipeline.py" @ONLY)
 endif(NOT OpenMVG_BUILD_TX_MINIMUM)
-IF(OpenMVG_USE_OPENCV)
-  ADD_EXECUTABLE(openMVG_main_tianxian
+
+IF (OpenMVG_BUILD_TIANXIAN)
+  IF(OpenMVG_USE_OPENCV)
+    ADD_EXECUTABLE(openMVG_main_tianxian
       main_tianxian.cpp tx.cpp capture.cpp)
-  TARGET_LINK_LIBRARIES(openMVG_main_tianxian
+    TARGET_LINK_LIBRARIES(openMVG_main_tianxian
       openMVG_system
       openMVG_image
       openMVG_features
@@ -348,8 +350,12 @@ IF(OpenMVG_USE_OPENCV)
       openMVG_sfm
       stlplus
       vlsift
+      proj
       ${OpenCV_LIBS})
-  SET_PROPERTY(TARGET openMVG_main_tianxian PROPERTY FOLDER OpenMVG/software)
-  SET_PROPERTY(TARGET openMVG_main_tianxian PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-  INSTALL(TARGETS openMVG_main_tianxian DESTINATION bin/)
-ENDIF(MSVC AND OpenMVG_USE_OPENCV)
+    SET_PROPERTY(TARGET openMVG_main_tianxian PROPERTY FOLDER OpenMVG/software)
+    SET_PROPERTY(TARGET openMVG_main_tianxian PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+    INSTALL(TARGETS openMVG_main_tianxian DESTINATION bin/)
+  ELSE(NOT OpenMVG_USE_OPENCV)
+    MESSAGE(FATAL_ERROR "please set OpenMVG_USE_OPENCV to ON, and point the include dir of opencv.")
+  ENDIF(OpenMVG_USE_OPENCV)
+ENDIF (OpenMVG_BUILD_TIANXIAN)
