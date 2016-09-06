@@ -131,10 +131,15 @@ void lineDetector(const string &smallPicPreName, const vector<int> &picIndex,
 
     // 读入框的小图片smallPicName， 进行直线检测， 将画上直线的图片写到picWithLine 
     // 返回是直线检测结果
-    lineInOnePic = drawLines(smallPicName.c_str(), picWithLine.c_str());
-    if (lineInOnePic.empty()) {
+    if (drawLines(smallPicName.c_str(), picWithLine.c_str()) <= 0) {
       continue;
     } else {
+      std::fstream in(picWithLine + ".txt", std::ios::in);
+      int j = 0;
+      while (in.eof()) {
+        in >> lineInOnePic[j].startPointX >> lineInOnePic[j].startPointY >> lineInOnePic[j].endPointX >> lineInOnePic[j].endPointY;
+      }
+      in.close();
       keyLineArray.push_back(lineInOnePic);
     }
   }

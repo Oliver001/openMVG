@@ -23,4 +23,4 @@ double getFuYang(double tx, double ty, double tz, double rx, double ry, double r
 double getShuiPing(double tx, double ty, double tz, double rx, double ry, double rz);
 bool sortdes(const cv::line_descriptor::KeyLine &k1, const cv::line_descriptor::KeyLine &k2);
 int Count(double a[], int size, double x);
-std::vector<cv::line_descriptor::KeyLine> drawLines(const char* imageName, const char* outputImgName);
+int drawLines(const char* imageName, const char* outputImgName);

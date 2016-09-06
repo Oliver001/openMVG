@@ -159,24 +159,15 @@ int Count(double a[], int size, double x)
 	return frequency;
 }
 
-std::vector<cv::line_descriptor::KeyLine> drawLines(const char* imageName, const char* outputImgName) {
-	std::vector<cv::line_descriptor::KeyLine> keylines;
+int drawLines(const char* imageName, const char* outputImgName) {
+  std::vector<cv::line_descriptor::KeyLine> keylines;
 	//(3)从路径中读取框选后的小图像，以进行直线提取
 	cv::Mat imgMat1 = cv::imread(imageName, 1);
 	if (imgMat1.data == NULL) {
 		std::cout << "Error, images could not be loaded. Please, check their path" << std::endl;
 		keylines.clear();
-		return keylines;
+		return -1;
 	}
-	//直线提取:方法一
-	///* create a pointer to a BinaryDescriptor object with default parameters */
-	//cv::Ptr<cv::line_descriptor::BinaryDescriptor> bd = cv::line_descriptor::BinaryDescriptor::createBinaryDescriptor();
-	///* compute lines and descriptors */
-	//cv::Mat descr1, descr2;
-	//std::vector<cv::line_descriptor::KeyLine> keylines;
-	// (*bd)(imgMat1, cv::Mat::ones(imgMat1.size(), CV_8UC1), keylines, descr1, false, false);
-
-	//方法二
 	cv::Mat mask = cv::Mat::ones(imgMat1.size(), CV_8UC1);
 	cv::Ptr<cv::line_descriptor::BinaryDescriptor> bd = cv::line_descriptor::BinaryDescriptor::createBinaryDescriptor();
 	bd->detect(imgMat1, keylines, mask);
@@ -191,12 +182,12 @@ std::vector<cv::line_descriptor::KeyLine> drawLines(const char* imageName, const
 		putText(imgMat1, id, CvPoint((keylines[i].startPointX + keylines[i].endPointX) / 2, (keylines[i].startPointY + keylines[i].endPointY) / 2), CV_FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(0, 0, 255));
 	}
 	imwrite(outputImgName, imgMat1);
-	//std::string txtpath = outputImgName;
-	//std::fstream out(txtpath + ".txt", std::ios::out);
-	//for (size_t i = 0; i < limitMax; i++) {
-	//  out << keylines[i].startPointX << " " << keylines[i].startPointY << " "
-	//    << keylines[i].endPointX << " " << keylines[i].endPointY << std::endl;
-	//}
-	//out.close();
-	return keylines;
+	std::string txtpath = outputImgName;
+	std::fstream out(txtpath + ".txt", std::ios::out);
+	for (size_t i = 0; i < limitMax; i++) {
+	  out << keylines[i].startPointX << " " << keylines[i].startPointY << " "
+	    << keylines[i].endPointX << " " << keylines[i].endPointY << std::endl;
+	}
+	out.close();
+	return keylines.size();
 }
