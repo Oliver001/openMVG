@@ -341,7 +341,7 @@ endif(NOT OpenMVG_BUILD_TX_MINIMUM)
 IF (OpenMVG_BUILD_TIANXIAN)
   IF(OpenMVG_USE_OPENCV)
     ADD_EXECUTABLE(openMVG_main_tianxian
-      main_tianxian.cpp tx.cpp capture.cpp)
+      main_tianxian.cpp tx.cpp capture.cpp main_tx.cpp)
     TARGET_LINK_LIBRARIES(openMVG_main_tianxian
       openMVG_system
       openMVG_image
