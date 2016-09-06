@@ -29,13 +29,6 @@
 #include "proj_api.h"
 #include "main_tx.h"
 
-#ifdef __linux__
-#include<sys/types.h>
-#include<sys/stat.h>
-#include<unistd.h>
-#define mkdir(x) mkdir(x,0777)
-#endif // __linux__
-
 using namespace openMVG::sfm;
 
 int main(int argc, char **argv) {

@@ -8,6 +8,12 @@
 #include <opencv2/highgui.hpp>
 #include "opencv2/line_descriptor.hpp"
 
+#ifdef __linux__
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<unistd.h>
+#define mkdir(x) mkdir(x,0777)
+#endif // __linux__
 
 void RotationMatrixToEulerAnglesXYZ(Eigen::Matrix<double, 3, 3>&  R, double* euler);
 void RotationMatrixToEulerAnglesZXY(Eigen::Matrix<double, 3, 3>& R, double *euler);

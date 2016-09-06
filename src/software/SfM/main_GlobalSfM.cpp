@@ -16,7 +16,12 @@ using namespace openMVG::sfm;
 
 #include "third_party/cmdLine/cmdLine.h"
 #include "third_party/stlplus3/filesystemSimplified/file_system.hpp"
-
+#ifdef __linux__
+#include<sys/types.h>
+#include<sys/stat.h>
+#include<unistd.h>
+#define mkdir(x) mkdir(x,0777)
+#endif // __linux__
 
 int main(int argc, char **argv) {
   using namespace std;
