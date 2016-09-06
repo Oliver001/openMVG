@@ -119,7 +119,7 @@ int main(int argc, char **argv) {
     drawLinePicIndex.push_back(temp);
   }
   idx_id_in.close();
-#endif !_WIN32
+#endif //_WIN32
   //(2)处理每一张图像 //框图 
   for (auto i : drawLinePicIndex) {
     View *view = my_sfm_data.views.at(i).get();
@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
     capture(imgName);
 #else
     std::string image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + ".jpg";
-#endif !_WIN32
+#endif //_WIN32
     cv::Point pointOne;
     std::fstream in(image_path + ".txt", std::ios::in);
     in >> pointOne.x >> pointOne.y;
@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
       drawLinePair.push_back(temp);
     }
   }
-#endif !_WIN32
+#endif //_WIN32
   //为计算GPS存储的目标在虚拟空间中的点
   std::vector<openMVG::Vec3> points3DForGPS;
   //代表每次计算出来的水平向量，用以计算平均水平角和水平角的标准差

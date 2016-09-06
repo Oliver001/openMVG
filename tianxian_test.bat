@@ -15,5 +15,5 @@ openMVG_main_ComputeMatches -i %matches_dir%\sfm_data.json -o %matches_dir%  -f 
 
 openMVG_main_GlobalSfM -i %matches_dir%\sfm_data.json -m %matches_dir% -o %reconstructioon_dir%
 
-openMVG_main_tianxian -i %matches_dir%\sfm_data.json -m %matches_dir% -o %reconstructioon_dir% -a 0 -b 4 -c %images_dir%
+openMVG_main_tianxian -i %matches_dir%\sfm_data.json
 
