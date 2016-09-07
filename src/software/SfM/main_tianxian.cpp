@@ -111,7 +111,7 @@ int main(int argc, char **argv) {
   }
 #else
     // 读取图片的总数目和id
-  std::fstream idx_id_in(my_sfm_data.s_root_path + "matches/idx_id.txt", std::ios::in);
+  std::fstream idx_id_in(my_sfm_data.s_root_path + "/../matches/idx_id.txt", std::ios::in);
   idx_id_in >> drawLinePicNum;
   int temp = 0;
   for (int i = 0; i < drawLinePicNum; i++) {
@@ -128,10 +128,10 @@ int main(int argc, char **argv) {
     // 从大图片框出天线，将小图片写到 image_path 同时将小
     // 图片的左上角坐标写到matches目录下image_path.txt
 #ifdef _WIN32
-    image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + ".jpg";
+    image_path = my_sfm_data.s_root_path + "/../matches/picSmall0" + to_string(i) + ".jpg";
     capture(imgName);
 #else
-    std::string image_path = my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + ".jpg";
+    std::string image_path = my_sfm_data.s_root_path + "/../matches/picSmall0" + to_string(i) + ".jpg";
 #endif //_WIN32
     cv::Point pointOne;
     std::fstream in(image_path + ".txt", std::ios::in);
@@ -147,10 +147,10 @@ int main(int argc, char **argv) {
   vector < vector < cv::line_descriptor::KeyLine> > keyLineArray;//保存直线提取结果
   std::vector<int> drawLinePair;// 保存每个小图片上选定的直线编号
 #ifdef _WIN32
-  lineDetector(my_sfm_data.s_root_path + "/../" + "matches/picSmall0", drawLinePicIndex, keyLineArray); // 直线提取
+  lineDetector(my_sfm_data.s_root_path + "/../matches/picSmall0", drawLinePicIndex, keyLineArray); // 直线提取
   //读取画好直线的小图片 显示用
   for (int i : drawLinePicIndex) {
-    cv::Mat image = cv::imread(my_sfm_data.s_root_path + "/../" + "matches/picSmall0" + to_string(i) + "_with_lines.jpg");
+    cv::Mat image = cv::imread(my_sfm_data.s_root_path + "/../matches/picSmall0" + to_string(i) + "_with_lines.jpg");
     if (!image.empty()) {
       string windowName = std::to_string(i);
       cv::namedWindow(windowName, 1);
@@ -169,22 +169,24 @@ int main(int argc, char **argv) {
   cv::destroyAllWindows();
 #else
   /*******************        ANDROID         *****************/
-  string smallPicPreName = my_sfm_data.s_root_path + "/../" + "matches/picSmall0";
+  string smallPicPreName = my_sfm_data.s_root_path + "/../matches/picSmall0";
   for (auto i : drawLinePicIndex) {
     string smallPicName = smallPicPreName + to_string(i) + ".jpg";
     string picWithLine = smallPicPreName + to_string(i) + "_with_lines.jpg";
     vector<cv::line_descriptor::KeyLine> lineInOnePic;
     std::fstream in(picWithLine + ".txt", std::ios::in);
     int j = 0;
-    while (in.eof()) {
-      in >> lineInOnePic[j].startPointX >> lineInOnePic[j].startPointY
-        >> lineInOnePic[j].endPointX >> lineInOnePic[j].endPointY;
+    while (!in.eof()) {
+      cv::line_descriptor::KeyLine keyline;
+      in >> keyline.startPointX >> keyline.startPointY
+        >> keyline.endPointX >> keyline.endPointY;
+      lineInOnePic.push_back(keyline);
     }
     in.close();
     keyLineArray.push_back(lineInOnePic);
   }
   {
-    std::fstream pic_in(my_sfm_data.s_root_path + "matches/pic.txt", std::ios::in);
+    std::fstream pic_in(my_sfm_data.s_root_path + "/../matches/pic.txt", std::ios::in);
     int temp = -1;
     for (int j = 0; j < drawLinePicNum; j++) {
       pic_in >> temp;

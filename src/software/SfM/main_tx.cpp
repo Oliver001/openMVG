@@ -239,7 +239,7 @@ void computeCorrespondingPoints(vector<openMVG::Vec2> &points_1, vector<openMVG:
   cv::line(imageMat1, cv::Point2d(start_x, start_y), cv::Point2d(end_x, end_y), cv::Scalar(255, 0, 0), 1);
   cv::circle(imageMat1, cv::Point2d(start_x, start_y), 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
   cv::circle(imageMat1, cv::Point2d(end_x, end_y), 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
-  cv::imwrite(epiImg1Path, imageMat1);
+  //cv::imwrite(epiImg1Path, imageMat1);
 
   vector<cv::Vec3f> corresEpilines;
   openMVG::Mat3 FF;
@@ -278,7 +278,7 @@ void computeCorrespondingPoints(vector<openMVG::Vec2> &points_1, vector<openMVG:
     points_2.push_back(openMVG::Vec2(ans.x, ans.y));
     circle(imageMat2, ans, 0.5, cv::Scalar(0, 0, 255), 3, 8, 0);
   }
-  imwrite(epiImg2Path, imageMat2);
+  //imwrite(epiImg2Path, imageMat2);
 }
 
 //Èý½Ç²âÁ¿
