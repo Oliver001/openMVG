@@ -23,7 +23,7 @@ extern CvPoint origin;
 extern bool istuNumOne;
 extern string image_path;
 
-//获取鼠标点的位置
+//鑾峰彇榧犳爣鐐圭殑浣嶇疆
 void onMouse(int event, int x, int y, int flags, void *param);
 int capture(string& imageName);
 #endif //ifdef _WIN32

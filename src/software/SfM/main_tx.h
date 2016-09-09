@@ -17,10 +17,10 @@ using std::vector;
 using std::string;
 
 /*@param_input sfm_data
-*@param_input  posesIndex ÓĞĞ§Ë÷Òı±àºÅ
-*@param_output rAndroid ´ÓtxtÎÄ¼ş¶ÁÈ¡µÄĞı×ª¾ØÕó
-*@param_output allGPS ´ÓtxtÎÄ¼ş¶ÁÈ¡µÄGPS
-*@param_input filePath txt´æ·ÅµÄ¸ùÄ¿Â¼
+*@param_input  posesIndex æœ‰æ•ˆç´¢å¼•ç¼–å·
+*@param_output rAndroid ä»txtæ–‡ä»¶è¯»å–çš„æ—‹è½¬çŸ©é˜µ
+*@param_output allGPS ä»txtæ–‡ä»¶è¯»å–çš„GPS
+*@param_input filePath txtå­˜æ”¾çš„æ ¹ç›®å½•
 */
 void readRotations(const SfM_Data & sfm_data,
   const vector<int> &posesIndex,
@@ -29,11 +29,11 @@ void readRotations(const SfM_Data & sfm_data,
   string &filePath);
 
 /*
-*@param_out  out_finalrt	×îÖÕºÏ³ÉµÄĞı×ª½Ç
-*@param_in	poseNum			poseÊıÁ¿
-*@param_in rotationsAndroid °²×¿µÃµ½µÄĞı×ª½Ç
-*@param_in rotations sfm	µÃµ½µÄĞéÄâ¿Õ¼äµÄĞı×ª
-*@param_in fileOutPath		½Ç¶È½á¹ûĞ´ÈëµÄ¸ùÄ¿Â¼
+*@param_out  out_finalrt	æœ€ç»ˆåˆæˆçš„æ—‹è½¬è§’
+*@param_in	poseNum			poseæ•°é‡
+*@param_in rotationsAndroid å®‰å“å¾—åˆ°çš„æ—‹è½¬è§’
+*@param_in rotations sfm	å¾—åˆ°çš„è™šæ‹Ÿç©ºé—´çš„æ—‹è½¬
+*@param_in fileOutPath		è§’åº¦ç»“æœå†™å…¥çš„æ ¹ç›®å½•
 */
 void virtualToReality(Eigen::Matrix<double, 3, 3> &out_finalrt, int poseNum,
   const vector<Eigen::Matrix<double, 3, 3> > &rotationsAndroid,
@@ -41,10 +41,10 @@ void virtualToReality(Eigen::Matrix<double, 3, 3> &out_finalrt, int poseNum,
   string fileOutPath);
 
 /*
-*@param_input smallPicPreName Ğ¡Í¼Æ¬µÄ¹²Í¬Ç°×ºÂ·¾¶Ãû³Æ£¬my_Path/matches/picSmall0
-*@param_input picIndex ½øĞĞ¿òÑ¡µÄÍ¼Æ¬±àºÅ£¬ÓësmallPicPreName¹²Í¬×é³ÉĞ¡Í¼Æ¬µÄÈ«Ãû, my_Path/mathces/picSmall01.jpg
-*@param_output keyLineArray Ö±Ïß¼ì²â½á¹û±£´æµÄÊı×é ·µ»ØÖµ
-*´Ëº¯ÊıÄÚ»á½øĞĞÍ¼Æ¬µÄ¶ÁÈ¡ºÍĞ´Èë imread imwrite
+*@param_input smallPicPreName å°å›¾ç‰‡çš„å…±åŒå‰ç¼€è·¯å¾„åç§°ï¼Œmy_Path/matches/picSmall0
+*@param_input picIndex è¿›è¡Œæ¡†é€‰çš„å›¾ç‰‡ç¼–å·ï¼Œä¸smallPicPreNameå…±åŒç»„æˆå°å›¾ç‰‡çš„å…¨å, my_Path/mathces/picSmall01.jpg
+*@param_output keyLineArray ç›´çº¿æ£€æµ‹ç»“æœä¿å­˜çš„æ•°ç»„ è¿”å›å€¼
+*æ­¤å‡½æ•°å†…ä¼šè¿›è¡Œå›¾ç‰‡çš„è¯»å–å’Œå†™å…¥ imread imwrite
 */
 void lineDetector(const string &smallPicPreName, const vector<int> &picIndex,
   vector<vector<cv::line_descriptor::KeyLine> > &keyLineArray);
@@ -64,7 +64,7 @@ void computeFundament(cv::Mat &FundamentEPP, const vector<int> &drawLinePicIndex
 *@out points_2
 *@in my_sfm_data
 *@in keyLineArray
-*IO Ğ´txt
+*IO å†™txt
 */
 void computeCorrespondingPoints(vector<openMVG::Vec2> &points_1, vector<openMVG::Vec2> &points_2,
   openMVG::sfm::SfM_Data &my_sfm_data, const vector<vector<cv::line_descriptor::KeyLine> > &keyLineArray,

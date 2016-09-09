@@ -1,10 +1,10 @@
 #include "main_tx.h"
 #include "openMVG\multiview\triangulation_nview.hpp"
 /*@param_input sfm_data
-*@param_input  posesIndex ÓĞĞ§Ë÷Òı±àºÅ
-*@param_output rAndroid ´ÓtxtÎÄ¼ş¶ÁÈ¡µÄĞı×ª¾ØÕó
-*@param_output allGPS ´ÓtxtÎÄ¼ş¶ÁÈ¡µÄGPS
-*@param_input filePath txt´æ·ÅµÄ¸ùÄ¿Â¼
+*@param_input  posesIndex æœ‰æ•ˆç´¢å¼•ç¼–å·
+*@param_output rAndroid ä»txtæ–‡ä»¶è¯»å–çš„æ—‹è½¬çŸ©é˜µ
+*@param_output allGPS ä»txtæ–‡ä»¶è¯»å–çš„GPS
+*@param_input filePath txtå­˜æ”¾çš„æ ¹ç›®å½•
 */
 void readRotations(const SfM_Data & sfm_data,
   const vector<int> &posesIndex,
@@ -42,12 +42,12 @@ void readRotations(const SfM_Data & sfm_data,
 }
 
 /*
-*@param_out  out_finalrt	×îÖÕºÏ³ÉµÄĞı×ª½Ç
-*@param_in	poseNum			poseÊıÁ¿ ¼´SfMºó×îÖÕÓĞĞ§µÄÍ¼Æ¬ÊıÁ¿
-*@param_in rotationsAndroid °²×¿µÃµ½µÄĞı×ª½Ç
-*@param_in rotations sfm	µÃµ½µÄĞéÄâ¿Õ¼äµÄĞı×ª
-*@param_in fileOutPath		½Ç¶È½á¹ûĞ´ÈëµÄ¸ùÄ¿Â¼
-*IO  Ğ´txt
+*@param_out  out_finalrt	æœ€ç»ˆåˆæˆçš„æ—‹è½¬è§’
+*@param_in	poseNum			poseæ•°é‡ å³SfMåæœ€ç»ˆæœ‰æ•ˆçš„å›¾ç‰‡æ•°é‡
+*@param_in rotationsAndroid å®‰å“å¾—åˆ°çš„æ—‹è½¬è§’
+*@param_in rotations sfm	å¾—åˆ°çš„è™šæ‹Ÿç©ºé—´çš„æ—‹è½¬
+*@param_in fileOutPath		è§’åº¦ç»“æœå†™å…¥çš„æ ¹ç›®å½•
+*IO  å†™txt
 */
 void virtualToReality(Eigen::Matrix<double, 3, 3> &out_finalrt, int poseNum,
   const vector<Eigen::Matrix<double, 3, 3> > &rotationsAndroid,
@@ -96,7 +96,7 @@ void virtualToReality(Eigen::Matrix<double, 3, 3> &out_finalrt, int poseNum,
   eulerTotal[2] /= poseNum;
 
   getRotMatrixZYX(out_finalrt, eulerTotal[0], eulerTotal[1], eulerTotal[2]);
-  //¼ÆËã¾ù·½
+  //è®¡ç®—å‡æ–¹
   double RSME = 0.0;
   for (size_t i = 0; i < eulerVector.size(); i += 3) {
     RSME += (abs(eulerTotal[0] - eulerVector[i]) + abs(eulerTotal[1] - eulerVector[i + 1])
@@ -104,7 +104,7 @@ void virtualToReality(Eigen::Matrix<double, 3, 3> &out_finalrt, int poseNum,
   }
 
   /********************************************************************************/
-    //Ğ´ÈëÎÄ¼ş
+    //å†™å…¥æ–‡ä»¶
   string txtPath = fileOutPath + "/txtFiles";
   fstream tr0(txtPath + "/transformRot.txt", ios::out);
   for (size_t i = 0; i < poseNum; i++) {
@@ -117,10 +117,10 @@ void virtualToReality(Eigen::Matrix<double, 3, 3> &out_finalrt, int poseNum,
 }
 
 /*
-*@param_input smallPicPreName Ğ¡Í¼Æ¬µÄ¹²Í¬Ç°×ºÃû³Æ£¬my_Path/matches/picSmall0
-*@param_input picIndex ½øĞĞ¿òÑ¡µÄÍ¼Æ¬±àºÅ£¬ÓësmallPicPreName¹²Í¬×é³ÉĞ¡Í¼Æ¬µÄÈ«Ãû, my_Path/mathces/picSmall01.jpg
-*@param_output keyLineArray Ö±Ïß¼ì²â½á¹û±£´æµÄÊı×é ·µ»ØÖµ
-*´Ëº¯ÊıÄÚ»á½øĞĞÍ¼Æ¬µÄ¶ÁÈ¡ºÍĞ´Èë imread imwrite
+*@param_input smallPicPreName å°å›¾ç‰‡çš„å…±åŒå‰ç¼€åç§°ï¼Œmy_Path/matches/picSmall0
+*@param_input picIndex è¿›è¡Œæ¡†é€‰çš„å›¾ç‰‡ç¼–å·ï¼Œä¸smallPicPreNameå…±åŒç»„æˆå°å›¾ç‰‡çš„å…¨å, my_Path/mathces/picSmall01.jpg
+*@param_output keyLineArray ç›´çº¿æ£€æµ‹ç»“æœä¿å­˜çš„æ•°ç»„ è¿”å›å€¼
+*æ­¤å‡½æ•°å†…ä¼šè¿›è¡Œå›¾ç‰‡çš„è¯»å–å’Œå†™å…¥ imread imwrite
 */
 void lineDetector(const string &smallPicPreName, const vector<int> &picIndex,
   vector<vector<cv::line_descriptor::KeyLine> > &keyLineArray) {
@@ -129,8 +129,8 @@ void lineDetector(const string &smallPicPreName, const vector<int> &picIndex,
     string picWithLine = smallPicPreName + to_string(i) + "_with_lines.jpg";
     vector<cv::line_descriptor::KeyLine> lineInOnePic;
 
-    // ¶ÁÈë¿òµÄĞ¡Í¼Æ¬smallPicName£¬ ½øĞĞÖ±Ïß¼ì²â£¬ ½«»­ÉÏÖ±ÏßµÄÍ¼Æ¬Ğ´µ½picWithLine 
-    // ·µ»ØÊÇÖ±Ïß¼ì²â½á¹û
+    // è¯»å…¥æ¡†çš„å°å›¾ç‰‡smallPicNameï¼Œ è¿›è¡Œç›´çº¿æ£€æµ‹ï¼Œ å°†ç”»ä¸Šç›´çº¿çš„å›¾ç‰‡å†™åˆ°picWithLine 
+    // è¿”å›æ˜¯ç›´çº¿æ£€æµ‹ç»“æœ
     if (drawLines(smallPicName.c_str(), picWithLine.c_str()) <= 0) {
       continue;
     } else {
@@ -181,7 +181,7 @@ void computeFundament(cv::Mat &FundamentEPP, const vector<int> &drawLinePicIndex
     C.at<double>(i, 0) = c(i, 0);
   }
   C.at<double>(3, 0) = 1.0;
-  //¼ÆËã»ù´¡¾ØÕó
+  //è®¡ç®—åŸºç¡€çŸ©é˜µ
   cv::Mat ee = promatric2*C;
   cv::Mat eInvSym = cv::Mat::zeros(3, 3, cv::DataType<double>::type);
   eInvSym.at<double>(0, 1) = -ee.at<double>(2);
@@ -198,7 +198,7 @@ void computeFundament(cv::Mat &FundamentEPP, const vector<int> &drawLinePicIndex
 *@out points_2
 *@in my_sfm_data
 *@in keyLineArray
-*IO Ğ´txt
+*IO å†™txt
 */
 void computeCorrespondingPoints(vector<openMVG::Vec2> &points_1, vector<openMVG::Vec2> &points_2,
   openMVG::sfm::SfM_Data &my_sfm_data, const vector<vector<cv::line_descriptor::KeyLine> > &keyLineArray,
@@ -270,7 +270,7 @@ void computeCorrespondingPoints(vector<openMVG::Vec2> &points_1, vector<openMVG:
     // draw the epipolar line between first and last column
     line(imageMat2, cv::Point(0.0, -c1 / b1), cv::Point(imageMat2.cols, -(c1 + a1 * imageMat2.cols) / b1), cv::Scalar(0, 255, 0), 1.5);
 
-    //¼ÆËã½»µã
+    //è®¡ç®—äº¤ç‚¹
     cv::Point2d ans;
     ans.x = (b1*c2 - b2*c1) / (a1*b2 - a2*b1);
     ans.y = (a2*c1 - a1*c2) / (a1*b2 - a2*b1);
@@ -281,7 +281,7 @@ void computeCorrespondingPoints(vector<openMVG::Vec2> &points_1, vector<openMVG:
   //imwrite(epiImg2Path, imageMat2);
 }
 
-//Èı½Ç²âÁ¿
+//ä¸‰è§’æµ‹é‡
 void computeTrangulation(const vector<openMVG::Vec2> &points_1, const vector<openMVG::Vec2> &points_2,
   openMVG::sfm::SfM_Data &my_sfm_data, int tuIndex1, int tuIndex2,
   Eigen::Matrix<double, 3, 3> finalrt,
@@ -307,7 +307,7 @@ void computeTrangulation(const vector<openMVG::Vec2> &points_1, const vector<ope
 }
 
 /*
-*IO  Ğ´ÎÄ¼ştxt
+*IO  å†™æ–‡ä»¶txt
 */
 void write3DPoints(openMVG::sfm::SfM_Data &my_sfm_data, const vector<openMVG::Vec3> &points3D,
   int tuIndex1, int tuIndex2) {
@@ -325,7 +325,7 @@ void write3DPoints(openMVG::sfm::SfM_Data &my_sfm_data, const vector<openMVG::Ve
 /*
 *@out horizontalVecs
 *@out verticalAngles
-*IO ÎÄ¼ş¼Ğ´´½¨ Ğ´txt
+*IO æ–‡ä»¶å¤¹åˆ›å»º å†™txt
 */
 void computeAngle(openMVG::sfm::SfM_Data &my_sfm_data,
   int tuIndex1, int tuIndex2,
@@ -343,9 +343,9 @@ void computeAngle(openMVG::sfm::SfM_Data &my_sfm_data,
     double fuyang = getFuYang(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
     verticalAngles.push_back(fuyang);
     double shuiping = getShuiPing(points3D[i].x(), points3D[i].y(), points3D[i].z(), points3D[i + 1].x(), points3D[i + 1].y(), points3D[i + 1].z());
-    //¼ÆËãË®Æ½Ê¸Á¿£¬ÒÔ½øĞĞÆ½¾ùË®Æ½½ÇºÍ±ê×¼²îµÄ¼ÆËã
+    //è®¡ç®—æ°´å¹³çŸ¢é‡ï¼Œä»¥è¿›è¡Œå¹³å‡æ°´å¹³è§’å’Œæ ‡å‡†å·®çš„è®¡ç®—
     double vecX, vecY;
-    //ÕÒµ½Ê¼µãÓëÖÕµã£¬ÖÕµãÎªzÖµ¸ü´óµÄÄÇ¸öµã
+    //æ‰¾åˆ°å§‹ç‚¹ä¸ç»ˆç‚¹ï¼Œç»ˆç‚¹ä¸ºzå€¼æ›´å¤§çš„é‚£ä¸ªç‚¹
     if (points3D[i].z() >= points3D[i + 1].z()) {
       vecX = points3D[i].x() - points3D[i + 1].x();
       vecY = points3D[i].y() - points3D[i + 1].y();
@@ -353,12 +353,12 @@ void computeAngle(openMVG::sfm::SfM_Data &my_sfm_data,
       vecX = points3D[i + 1].x() - points3D[i].x();
       vecY = points3D[i + 1].y() - points3D[i].y();
     }
-    //Ìí¼Ó¹éÒ»»¯µÄÏòÁ¿µ½ÈİÆ÷ÖĞ
+    //æ·»åŠ å½’ä¸€åŒ–çš„å‘é‡åˆ°å®¹å™¨ä¸­
     horizontalVecs.push_back(cv::Vec2d(vecX / (sqrt(vecX * vecX + vecY * vecY)), vecY / (sqrt(vecX * vecX + vecY * vecY))));
 
-    //cout << "Í¼ÏñË÷Òı¶Ô£º" << idi << " " << idj << endl;
-    //cout << setprecision(15) << "¸©Ñö½Ç£º" << fuyang << endl << "Ë®Æ½½Ç£º" << shuiping << endl;
-    outAngle << setprecision(15) << "¸©Ñö½Ç£º" << fuyang << endl << "Ë®Æ½½Ç£º" << shuiping << endl;
+    //cout << "å›¾åƒç´¢å¼•å¯¹ï¼š" << idi << " " << idj << endl;
+    //cout << setprecision(15) << "ä¿¯ä»°è§’ï¼š" << fuyang << endl << "æ°´å¹³è§’ï¼š" << shuiping << endl;
+    outAngle << setprecision(15) << "ä¿¯ä»°è§’ï¼š" << fuyang << endl << "æ°´å¹³è§’ï¼š" << shuiping << endl;
   }
   //cout << endl;
   outAngle.close();
@@ -405,27 +405,27 @@ void mdzz(openMVG::sfm::SfM_Data &my_sfm_data,
       vector<openMVG::Vec2> points_1;
       vector<openMVG::Vec2> points_2;
 
-      //¼ÆËãÁ½ÕÅÍ¼µÄÍ¬Ãûµã
+      //è®¡ç®—ä¸¤å¼ å›¾çš„åŒåç‚¹
       computeCorrespondingPoints(points_1, points_2, my_sfm_data, keyLineArray,
         drawLinePair, pointPair, tuIndex1, tuIndex2, idi, idj, FundamentEPP);
 
-      //Èı½Ç²âÁ¿
+      //ä¸‰è§’æµ‹é‡
       computeTrangulation(points_1, points_2, my_sfm_data, tuIndex1, tuIndex2,
         finalrt, points3DForGPS);
 
-      //Èı½Ç²âÁ¿ºóµÄµãĞ´µ½ my_sfm_data.s_root_path + /../ + points3D/
+      //ä¸‰è§’æµ‹é‡åçš„ç‚¹å†™åˆ° my_sfm_data.s_root_path + /../ + points3D/
       write3DPoints(my_sfm_data, points3DForGPS, tuIndex1, tuIndex2);
 
-      //¼ÆËã½Ç¶È
+      //è®¡ç®—è§’åº¦
       computeAngle(my_sfm_data, tuIndex1, tuIndex2, idi, idj, points3DForGPS, horizontalVecs, verticalAngles);
     }
   }
 }
 
 /*
-*Ëã½Ç¶ÈÆ½¾ùÖµ
+*ç®—è§’åº¦å¹³å‡å€¼
 *
-*IO Ğ´txt
+*IO å†™txt
 */
 void computeAVG(const openMVG::sfm::SfM_Data &my_sfm_data,
   const vector<cv::Vec2d> &horizontalVecs, const vector<double> &verticalAngles) {
@@ -441,14 +441,14 @@ void computeAVG(const openMVG::sfm::SfM_Data &my_sfm_data,
   deviationVer = sqrt(deviationVer / verticalAngles.size());
 
   cv::Vec2d avgVec(0.0, 0.0);
-  //½«¹éÒ»»¯µÄÏòÁ¿Ïà¼Ó
+  //å°†å½’ä¸€åŒ–çš„å‘é‡ç›¸åŠ 
   for (size_t i = 0; i < horizontalVecs.size(); i++) {
     avgVec[0] += horizontalVecs[i][0];
     avgVec[1] += horizontalVecs[i][1];
   }
-  //»ñÈ¡Æ½¾ùË®Æ½½Ç
+  //è·å–å¹³å‡æ°´å¹³è§’
   avgHor = getShuiPing(avgVec[0], avgVec[1], 1.0, 0.0, 0.0, 0.0);
-  //¼ÆËãË®Æ½½Ç±ê×¼²î
+  //è®¡ç®—æ°´å¹³è§’æ ‡å‡†å·®
   double theta;
   for (size_t i = 0; i < horizontalVecs.size(); i++) {
     theta = (180.0 / M_PI) * acos((avgVec[0] * horizontalVecs[i][0] + avgVec[1] * horizontalVecs[i][1]) /
@@ -456,15 +456,15 @@ void computeAVG(const openMVG::sfm::SfM_Data &my_sfm_data,
     deviationHor += theta * theta;
   }
   deviationHor = sqrt(deviationHor / horizontalVecs.size());
-  //Êä³öÆ½¾ù½Ç¶ÈÖÁÎÄ¼ş
+  //è¾“å‡ºå¹³å‡è§’åº¦è‡³æ–‡ä»¶
   string avgAngle = "angle/averageAngle.txt";
   fstream outAvgAngle(my_sfm_data.s_root_path + "/../" + avgAngle, ios::out);
-  //Êä³öĞÅÏ¢ÖÁÎÄ¼ş
-  outAvgAngle << setprecision(15) << "¸©Ñö½Ç£º" << avgVer << endl << "±ê×¼²î£º" << deviationVer << endl;
-  outAvgAngle << setprecision(15) << "Ë®Æ½½Ç£º" << avgHor << endl << "±ê×¼²î£º" << deviationHor << endl;
-  cout << "¸©Ñö½ÇÓëË®Æ½½ÇµÄÆ½¾ùÖµ£º" << endl;
-  cout << setprecision(15) << "¸©Ñö½Ç£º" << avgVer << endl << "±ê×¼²î£º" << deviationVer << endl;
-  cout << setprecision(15) << "Ë®Æ½½Ç£º" << avgHor << endl << "±ê×¼²î£º" << deviationHor << endl;
+  //è¾“å‡ºä¿¡æ¯è‡³æ–‡ä»¶
+  outAvgAngle << setprecision(15) << "ä¿¯ä»°è§’ï¼š" << avgVer << endl << "æ ‡å‡†å·®ï¼š" << deviationVer << endl;
+  outAvgAngle << setprecision(15) << "æ°´å¹³è§’ï¼š" << avgHor << endl << "æ ‡å‡†å·®ï¼š" << deviationHor << endl;
+  cout << "ä¿¯ä»°è§’ä¸æ°´å¹³è§’çš„å¹³å‡å€¼ï¼š" << endl;
+  cout << setprecision(15) << "ä¿¯ä»°è§’ï¼š" << avgVer << endl << "æ ‡å‡†å·®ï¼š" << deviationVer << endl;
+  cout << setprecision(15) << "æ°´å¹³è§’ï¼š" << avgHor << endl << "æ ‡å‡†å·®ï¼š" << deviationHor << endl;
   outAvgAngle.close();
 }
 
@@ -476,7 +476,7 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
   double *latitude = new double[posesNum];
   double *altitude = new double[posesNum];
 
-  //»ñÈ¡GPS and º£°ÎĞÅÏ¢.......
+  //è·å–GPS and æµ·æ‹”ä¿¡æ¯.......
   for (size_t i = 0; i < posesNum; ++i) {
     tmpGPS = allGPS[poseIndex[i]];
     longitude[i] = tmpGPS[0] * DEG_TO_RAD;
@@ -484,7 +484,7 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
     altitude[i] = tmpGPS[2];
   }
 
-  //º£°ÎÖÚÊı¡£¡£¡£¡£¡£¡£
+  //æµ·æ‹”ä¼—æ•°ã€‚ã€‚ã€‚ã€‚ã€‚ã€‚
   double commonZ = altitude[0];
   for (size_t i = 0; i < posesNum; i++) {
     if (Count(altitude, posesNum, altitude[i]) < Count(altitude, posesNum, altitude[i + 1])) {
@@ -494,16 +494,16 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
 
   projPJ pj_merc, pj_latlong;
   if (!(pj_merc = pj_init_plus("+proj=merc +lon_0=0 +k=1 +x_0=0 +y_0=0 +ellps=WGS84 +datum=WGS84 +units=m +no_defs"))) {
-    /*cout << "Í¶Ó°´´½¨Ê§°Ü!" << endl;*/
+    /*cout << "æŠ•å½±åˆ›å»ºå¤±è´¥!" << endl;*/
     exit(EXIT_FAILURE);
   }
   if (!(pj_latlong = pj_init_plus("+proj=longlat +datum=WGS84 +no_defs"))) {
-    /*cout << "Í¶Ó°´´½¨Ê§°Ü!" << endl;*/
+    /*cout << "æŠ•å½±åˆ›å»ºå¤±è´¥!" << endl;*/
     exit(EXIT_FAILURE);
   }
-  //¾­Î³¶ÈÖÁÍ¶Ó°×ø±êÏµµÄ×ª»»
+  //ç»çº¬åº¦è‡³æŠ•å½±åæ ‡ç³»çš„è½¬æ¢
   pj_transform(pj_latlong, pj_merc, posesNum, 1, longitude, latitude, NULL);
-  //¾­Î³¶ÈÊı¾İÎª0Ê±£¬Í¶Ó°ºó´æÔÚºÜĞ¡µÄĞ¡ÊıÖµ£¬ÔÚ´ËºöÂÔ
+  //ç»çº¬åº¦æ•°æ®ä¸º0æ—¶ï¼ŒæŠ•å½±åå­˜åœ¨å¾ˆå°çš„å°æ•°å€¼ï¼Œåœ¨æ­¤å¿½ç•¥
   for (size_t i = 0; i < posesNum; i++) {
     if (longitude[i] < 1e-5) {
       longitude[i] = 0.0;
@@ -512,7 +512,7 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
       latitude[i] = 0.0;
     }
   }
-  //(3)»ñÈ¡ĞéÄâ¿Õ¼äÖĞÃ¿¸öÏà»úµÄX,Y,Z×ø±ê
+  //(3)è·å–è™šæ‹Ÿç©ºé—´ä¸­æ¯ä¸ªç›¸æœºçš„X,Y,Zåæ ‡
   vector<double> xCoor, yCoor, zCoor;
   for (openMVG::sfm::Poses::iterator iterP = my_sfm_data.poses.begin();
     iterP != my_sfm_data.poses.end(); ++iterP) {
@@ -521,9 +521,9 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
     zCoor.push_back(iterP->second.center().z());
   }
 
-  //(4)Ê¹ÓÃ×îĞ¡¶ş³Ë·¨·¨¼ÆËãÆ½ÒÆTÓëËõ·ÅS
-  //Ê¹ÓÃÏÈÑéÖªÊ¶¼ÆËãÆ½ÒÆT£¬ÒÔ¼°Ëõ·ÅS£¬¼ÙÉèÓÃ»§ÅÄÉã¼ä¸ôµÄÆ½¾ù¾àÀëÎª0.5m
-  //¼ÆËãS
+  //(4)ä½¿ç”¨æœ€å°äºŒä¹˜æ³•æ³•è®¡ç®—å¹³ç§»Tä¸ç¼©æ”¾S
+  //ä½¿ç”¨å…ˆéªŒçŸ¥è¯†è®¡ç®—å¹³ç§»Tï¼Œä»¥åŠç¼©æ”¾Sï¼Œå‡è®¾ç”¨æˆ·æ‹æ‘„é—´éš”çš„å¹³å‡è·ç¦»ä¸º0.5m
+  //è®¡ç®—S
   Eigen::VectorXd x(3, 1);
   double gap = 0;
   for (size_t i = 0; i < posesNum - 1; i++) {
@@ -533,7 +533,7 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
   gap = gap / (posesNum - 1);
   double S = 0.5 / gap;
   x(0) = S;
-  //¼ÆËãT
+  //è®¡ç®—T
   double Tx = 0;
   double Ty = 0;
   for (size_t i = 0; i < posesNum; i++) {
@@ -545,7 +545,7 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
   x(1) = Tx;
   x(2) = Ty;
 
-  //(5)¶ÔÈı½Ç²âÁ¿³öÀ´µÄÄ¿±êµã£¬½øĞĞT,S×ª»¯²¢Êä³öGPS×ø±ê
+  //(5)å¯¹ä¸‰è§’æµ‹é‡å‡ºæ¥çš„ç›®æ ‡ç‚¹ï¼Œè¿›è¡ŒT,Sè½¬åŒ–å¹¶è¾“å‡ºGPSåæ ‡
   string GPSfile = "GPS/GPS.txt";
   fstream outGPS(my_sfm_data.s_root_path + "/../" + GPSfile, ios::out);
   double x0 = points3DForGPS[0].x();
@@ -553,9 +553,9 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
   double z0 = points3DForGPS[0].z();
   x0 = x0 * x(0) + x(1);
   y0 = y0 * x(0) + x(2);
-  //Êä³öËùÓĞÆ½Ãæ×ø±êµã
-  outGPS << "Í¶Ó°Æ½ÃæµÄÏà»ú×ø±ê:" << endl;
-  /*cout << "Í¶Ó°Æ½ÃæµÄÏà»ú×ø±ê:" << endl;*/
+  //è¾“å‡ºæ‰€æœ‰å¹³é¢åæ ‡ç‚¹
+  outGPS << "æŠ•å½±å¹³é¢çš„ç›¸æœºåæ ‡:" << endl;
+  /*cout << "æŠ•å½±å¹³é¢çš„ç›¸æœºåæ ‡:" << endl;*/
   for (size_t i = 0; i < posesNum; i++) {
     /*cout << i << ": " << setprecision(15) << longitude[i] << " " << latitude[i] << endl;*/
     outGPS << i << ": " << setprecision(15) << longitude[i] << " " << latitude[i] << endl;
@@ -563,9 +563,9 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
   delete[] longitude;
   delete[] latitude;
   delete[] altitude;
-  /*cout << "Ä¿±ê×ø±ê" << ": " << x0 << " " << y0 << endl << endl;*/
-  outGPS << "Ä¿±ê×ø±ê" << ": " << x0 << " " << y0 << endl << endl;
-  //½«Æ½Ãæ×ø±êÄæ×ª»¯ÎªGPS
+  /*cout << "ç›®æ ‡åæ ‡" << ": " << x0 << " " << y0 << endl << endl;*/
+  outGPS << "ç›®æ ‡åæ ‡" << ": " << x0 << " " << y0 << endl << endl;
+  //å°†å¹³é¢åæ ‡é€†è½¬åŒ–ä¸ºGPS
   pj_transform(pj_merc, pj_latlong, 1, 1, &x0, &y0, NULL);
 
   //cout << setprecision(15) << "S: " << x[0] << endl;
@@ -576,22 +576,22 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
   outGPS << setprecision(15) << "Ty: " << x[2] << endl << endl;
   x0 *= RAD_TO_DEG;
   y0 *= RAD_TO_DEG;
-  //»ù±¾ÔÚGPSÊı¾İÎª0Ê±²ÅÓĞ´ËÇé¿ö
+  //åŸºæœ¬åœ¨GPSæ•°æ®ä¸º0æ—¶æ‰æœ‰æ­¤æƒ…å†µ
   if (x0 < 1e-3) {
     x0 = 0.0;
     y0 = 0.0;
   }
-  outGPS << setprecision(15) << "¾­¶È£º" << x0 << endl;
-  outGPS << setprecision(15) << "Î³¶È£º" << y0 << endl;
-  //(6)¼ÆËãº£°Î
-  //»ñÈ¡ĞéÄâ¿Õ¼äÖĞÏà»ú×İ×ø±êµÄ¾ùÖµ
+  outGPS << setprecision(15) << "ç»åº¦ï¼š" << x0 << endl;
+  outGPS << setprecision(15) << "çº¬åº¦ï¼š" << y0 << endl;
+  //(6)è®¡ç®—æµ·æ‹”
+  //è·å–è™šæ‹Ÿç©ºé—´ä¸­ç›¸æœºçºµåæ ‡çš„å‡å€¼
   double sumOfZ = 0.0;
   for (size_t i = 0; i < posesNum; i++) {
     sumOfZ += zCoor[i];
   }
   sumOfZ /= posesNum;
   double Z = commonZ + (z0 - sumOfZ) * x[0];
-  /*cout << setprecision(15) << "º£°Î£º" << Z << endl;*/
-  outGPS << setprecision(15) << "º£°Î£º" << Z << endl;
+  /*cout << setprecision(15) << "æµ·æ‹”ï¼š" << Z << endl;*/
+  outGPS << setprecision(15) << "æµ·æ‹”ï¼š" << Z << endl;
   outGPS.close();
 }

@@ -1,4 +1,4 @@
-﻿#include "tx.h"
+#include "tx.h"
 //分别以XYZ, ZXY, ZYX的顺序，将旋转角重构成旋转矩阵或者由旋转矩阵分解至旋转角
 void RotationMatrixToEulerAnglesXYZ(Eigen::Matrix<double, 3, 3>&  R, double* euler) {
   double r00 = R(0, 0), r01 = R(0, 1), r02 = R(0, 2), r11 = R(1, 1), r12 = R(1, 2), r22 = R(2, 2);

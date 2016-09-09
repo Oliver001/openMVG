@@ -47,8 +47,8 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  /*********************1¡¢Ğı×ª×ª»¯¾ØÕóµÄ¼ÆËã********************/
-  //(1)»ñÈ¡SFM DATA
+  /*********************1ã€æ—‹è½¬è½¬åŒ–çŸ©é˜µçš„è®¡ç®—********************/
+  //(1)è·å–SFM DATA
   SfM_Data my_sfm_data;
   if (!Load(my_sfm_data, sSfM_Data_Filename, ESfM_Data(ALL))) {
     std::cerr << std::endl
@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
     return EXIT_FAILURE;
   }
 
-  //ĞèÒª´´½¨µÄËÄ¸öÎÄ¼ş¼Ğ
+  //éœ€è¦åˆ›å»ºçš„å››ä¸ªæ–‡ä»¶å¤¹
   string txtPath = my_sfm_data.s_root_path + "/../" + "txtFiles";
   mkdir(txtPath.c_str());
 
@@ -68,19 +68,19 @@ int main(int argc, char **argv) {
 
   mkdir((my_sfm_data.s_root_path + "/../" + "epipolarImg").c_str());
 
-  //(2)»ñÈ¡ĞéÄâ¿Õ¼äµÄĞı×ª¾ØÕó
+  //(2)è·å–è™šæ‹Ÿç©ºé—´çš„æ—‹è½¬çŸ©é˜µ
   size_t viewsNum = my_sfm_data.views.size();
   size_t posesNum = my_sfm_data.poses.size();
   vector<Eigen::Matrix<double, 3, 3>> rotations;
   vector<int> posesIndex;
   for (Poses::iterator itr = my_sfm_data.poses.begin(); itr != my_sfm_data.poses.end(); itr++) {
     rotations.push_back(itr->second.rotation().inverse());
-    //´æ´¢ÓĞĞ§posesµÄË÷ÒıºÅ
+    //å­˜å‚¨æœ‰æ•ˆposesçš„ç´¢å¼•å·
     posesIndex.push_back(itr->first);
   }
 
-  //(3)»ñÈ¡ÏÖÊµ¿Õ¼äÖĞµÄĞı×ª¾ØÕó
-  //(4)½«ÊÖ»ú¾ØÕó×ª»¯ÎªÏà»ú¾ØÕóRemap
+  //(3)è·å–ç°å®ç©ºé—´ä¸­çš„æ—‹è½¬çŸ©é˜µ
+  //(4)å°†æ‰‹æœºçŸ©é˜µè½¬åŒ–ä¸ºç›¸æœºçŸ©é˜µRemap
   string filePath = my_sfm_data.s_root_path;
   vector<Eigen::Matrix<double, 3, 3> > rotationsAndroid;
   vector<vector<double> > allGPS;
@@ -90,27 +90,27 @@ int main(int argc, char **argv) {
 
   /***************************************************/
 
-  // (1)Êä³öÓĞĞ§µÄ¡¢¿ÉÒÔ½øĞĞÈı½Ç²âÁ¿µÄË÷ÒıºÅ,ÈÃ
-  // ÓÃ»§Ñ¡Ôñ£¬²¢ÊäÈëÏëÒª²âÁ¿µÄÕÅÊı£¬ºÍÃ¿ÕÅµÄË÷ÒıºÅ
-  int drawLinePicNum; ////ÓÃ»§Ïë½øĞĞÌáÈ¡µÄÍ¼ÏñµÄÊıÁ¿
-  vector<int> drawLinePicIndex;  //½øĞĞÖ±ÏßÌáÈ¡µÄÍ¼Æ¬±àºÅ
-  vector<cv::Point2d> pointPair; // Ã¿¸öĞ¡Í¼×óÉÏ½ÇµÄ×ø±ê 
+  // (1)è¾“å‡ºæœ‰æ•ˆçš„ã€å¯ä»¥è¿›è¡Œä¸‰è§’æµ‹é‡çš„ç´¢å¼•å·,è®©
+  // ç”¨æˆ·é€‰æ‹©ï¼Œå¹¶è¾“å…¥æƒ³è¦æµ‹é‡çš„å¼ æ•°ï¼Œå’Œæ¯å¼ çš„ç´¢å¼•å·
+  int drawLinePicNum; ////ç”¨æˆ·æƒ³è¿›è¡Œæå–çš„å›¾åƒçš„æ•°é‡
+  vector<int> drawLinePicIndex;  //è¿›è¡Œç›´çº¿æå–çš„å›¾ç‰‡ç¼–å·
+  vector<cv::Point2d> pointPair; // æ¯ä¸ªå°å›¾å·¦ä¸Šè§’çš„åæ ‡ 
 #ifdef _WIN32
-  std::cout << "ÓĞĞ§µÄË÷ÒıºÅ:";
+  std::cout << "æœ‰æ•ˆçš„ç´¢å¼•å·:";
   for (size_t i = 0; i < posesIndex.size(); i++)
     cout << posesIndex[i] << " ";
   std::cout << endl;
-  std::cout << "ÊäÈëÒªÆ¥ÅäµÄÕÅÊı£º";
+  std::cout << "è¾“å…¥è¦åŒ¹é…çš„å¼ æ•°ï¼š";
 
   std::cin >> drawLinePicNum;
-  std::cout << "ÊäÈëÃ¿ÕÅµÄË÷ÒıºÅ(Ã¿ÕÅµÄË÷ÒıºÅ£¬²»ÄÜÒ»Ñù)£º";
+  std::cout << "è¾“å…¥æ¯å¼ çš„ç´¢å¼•å·(æ¯å¼ çš„ç´¢å¼•å·ï¼Œä¸èƒ½ä¸€æ ·)ï¼š";
   for (int i = 0; i < drawLinePicNum; i++) {
     int tmp;
     std::cin >> tmp;
     drawLinePicIndex.push_back(tmp);
   }
 #else
-    // ¶ÁÈ¡Í¼Æ¬µÄ×ÜÊıÄ¿ºÍid
+    // è¯»å–å›¾ç‰‡çš„æ€»æ•°ç›®å’Œid
   std::fstream idx_id_in(my_sfm_data.s_root_path + "/../matches/idx_id.txt", std::ios::in);
   idx_id_in >> drawLinePicNum;
   int temp = 0;
@@ -120,13 +120,13 @@ int main(int argc, char **argv) {
   }
   idx_id_in.close();
 #endif //_WIN32
-  //(2)´¦ÀíÃ¿Ò»ÕÅÍ¼Ïñ //¿òÍ¼ 
+  //(2)å¤„ç†æ¯ä¸€å¼ å›¾åƒ //æ¡†å›¾ 
   for (auto i : drawLinePicIndex) {
     View *view = my_sfm_data.views.at(i).get();
     std::string imgName = my_sfm_data.s_root_path + "/" + view->s_Img_path;
     
-    // ´Ó´óÍ¼Æ¬¿ò³öÌìÏß£¬½«Ğ¡Í¼Æ¬Ğ´µ½ image_path Í¬Ê±½«Ğ¡
-    // Í¼Æ¬µÄ×óÉÏ½Ç×ø±êĞ´µ½matchesÄ¿Â¼ÏÂimage_path.txt
+    // ä»å¤§å›¾ç‰‡æ¡†å‡ºå¤©çº¿ï¼Œå°†å°å›¾ç‰‡å†™åˆ° image_path åŒæ—¶å°†å°
+    // å›¾ç‰‡çš„å·¦ä¸Šè§’åæ ‡å†™åˆ°matchesç›®å½•ä¸‹image_path.txt
 #ifdef _WIN32
     image_path = my_sfm_data.s_root_path + "/../matches/picSmall0" + to_string(i) + ".jpg";
     capture(imgName);
@@ -140,15 +140,15 @@ int main(int argc, char **argv) {
     pointPair.push_back(pointOne);
   }
 
-  //ÊäÈë¿òÑ¡ÌìÏßÍ¼Æ¬µÄ¹²Í¬Ç°×ºÃû£¬´Ë´¦ÊÇ.../matches/picSmall0, ¸ù¾İ¿òÑ¡µÄµÄÍ¼Æ¬±àºÅºÏ³ÉÍ¼Æ¬Ãû
-  //Èç.../matches/picSmall01.jpg
-  //Ö±Ïß¼ì²â½á¹û±£´æÔÚkeyLineArray
-  //Í¬Ê±½«»­ÉÏÖ±ÏßµÄÍ¼Æ¬Ğ´µ½Í¬Ò»¸öÄ¿Â¼£¬ Èç.../matches/picSmalee01_with_lines.jpg
-  vector < vector < cv::line_descriptor::KeyLine> > keyLineArray;//±£´æÖ±ÏßÌáÈ¡½á¹û
-  std::vector<int> drawLinePair;// ±£´æÃ¿¸öĞ¡Í¼Æ¬ÉÏÑ¡¶¨µÄÖ±Ïß±àºÅ
+  //è¾“å…¥æ¡†é€‰å¤©çº¿å›¾ç‰‡çš„å…±åŒå‰ç¼€åï¼Œæ­¤å¤„æ˜¯.../matches/picSmall0, æ ¹æ®æ¡†é€‰çš„çš„å›¾ç‰‡ç¼–å·åˆæˆå›¾ç‰‡å
+  //å¦‚.../matches/picSmall01.jpg
+  //ç›´çº¿æ£€æµ‹ç»“æœä¿å­˜åœ¨keyLineArray
+  //åŒæ—¶å°†ç”»ä¸Šç›´çº¿çš„å›¾ç‰‡å†™åˆ°åŒä¸€ä¸ªç›®å½•ï¼Œ å¦‚.../matches/picSmalee01_with_lines.jpg
+  vector < vector < cv::line_descriptor::KeyLine> > keyLineArray;//ä¿å­˜ç›´çº¿æå–ç»“æœ
+  std::vector<int> drawLinePair;// ä¿å­˜æ¯ä¸ªå°å›¾ç‰‡ä¸Šé€‰å®šçš„ç›´çº¿ç¼–å·
 #ifdef _WIN32
-  lineDetector(my_sfm_data.s_root_path + "/../matches/picSmall0", drawLinePicIndex, keyLineArray); // Ö±ÏßÌáÈ¡
-  //¶ÁÈ¡»­ºÃÖ±ÏßµÄĞ¡Í¼Æ¬ ÏÔÊ¾ÓÃ
+  lineDetector(my_sfm_data.s_root_path + "/../matches/picSmall0", drawLinePicIndex, keyLineArray); // ç›´çº¿æå–
+  //è¯»å–ç”»å¥½ç›´çº¿çš„å°å›¾ç‰‡ æ˜¾ç¤ºç”¨
   for (int i : drawLinePicIndex) {
     cv::Mat image = cv::imread(my_sfm_data.s_root_path + "/../matches/picSmall0" + to_string(i) + "_with_lines.jpg");
     if (!image.empty()) {
@@ -159,8 +159,8 @@ int main(int argc, char **argv) {
     }
   }
 
-  //(3)ÓÃ»§ÊäÈëÖ±Ïß¶ÔµÄÊıÁ¿£¬²¢ÊäÈë¶ÔÓ¦µÄ±àºÅ£¬¡°-1¡±±íÊ¾´Ë´¦µÄÖ±ÏßÃ»ÓĞ±»ÌáÈ¡³öÀ´¡£
-  std::cout << "ÊäÈëÖ±ÏßÔÚÃ¿ÕÅÍ¼ÏñÉÏµÄ±àºÅ, ÈôÄ³ÕÅÍ¼ÏñÉÏ´ËÖ±ÏßÃ»ÓĞÌáÈ¡³öÀ´£¬ÇëÊäÈë¡®-1¡¯:" << endl;
+  //(3)ç”¨æˆ·è¾“å…¥ç›´çº¿å¯¹çš„æ•°é‡ï¼Œå¹¶è¾“å…¥å¯¹åº”çš„ç¼–å·ï¼Œâ€œ-1â€è¡¨ç¤ºæ­¤å¤„çš„ç›´çº¿æ²¡æœ‰è¢«æå–å‡ºæ¥ã€‚
+  std::cout << "è¾“å…¥ç›´çº¿åœ¨æ¯å¼ å›¾åƒä¸Šçš„ç¼–å·, è‹¥æŸå¼ å›¾åƒä¸Šæ­¤ç›´çº¿æ²¡æœ‰æå–å‡ºæ¥ï¼Œè¯·è¾“å…¥â€˜-1â€™:" << endl;
   for (int j = 0; j < drawLinePicNum; j++) {
     int tmp;
     std::cin >> tmp;
@@ -194,20 +194,20 @@ int main(int argc, char **argv) {
     }
   }
 #endif //_WIN32
-  //Îª¼ÆËãGPS´æ´¢µÄÄ¿±êÔÚĞéÄâ¿Õ¼äÖĞµÄµã
+  //ä¸ºè®¡ç®—GPSå­˜å‚¨çš„ç›®æ ‡åœ¨è™šæ‹Ÿç©ºé—´ä¸­çš„ç‚¹
   std::vector<openMVG::Vec3> points3DForGPS;
-  //´ú±íÃ¿´Î¼ÆËã³öÀ´µÄË®Æ½ÏòÁ¿£¬ÓÃÒÔ¼ÆËãÆ½¾ùË®Æ½½ÇºÍË®Æ½½ÇµÄ±ê×¼²î
+  //ä»£è¡¨æ¯æ¬¡è®¡ç®—å‡ºæ¥çš„æ°´å¹³å‘é‡ï¼Œç”¨ä»¥è®¡ç®—å¹³å‡æ°´å¹³è§’å’Œæ°´å¹³è§’çš„æ ‡å‡†å·®
   std::vector<cv::Vec2d> horizontalVecs;
   std::vector<double> verticalAngles;
 
   mdzz(my_sfm_data, finalrt, drawLinePicIndex, drawLinePair,
     keyLineArray, horizontalVecs, verticalAngles,
     points3DForGPS, pointPair);
-  //½Ç¶È¼ÆËã Êä³ö horizontalVecs verticalAngles points3DForGPS
+  //è§’åº¦è®¡ç®— è¾“å‡º horizontalVecs verticalAngles points3DForGPS
   computeAVG(my_sfm_data, horizontalVecs, verticalAngles);
 
-  /*******************4¡¢Ä¿±êGPSÓëº£°ÎµÄ¼ÆËã***************/
+  /*******************4ã€ç›®æ ‡GPSä¸æµ·æ‹”çš„è®¡ç®—***************/
   GPSandHeight(allGPS, posesIndex, my_sfm_data, points3DForGPS);
-  ////Ê¹ÓÃĞı×ª×ª»¯¾ØÕó£¬¶ÔËùÓĞÆäËûµãÔÆ½øĞĞĞı×ª£¬ÒòÎªÒª¿´µ½×îºóĞı×ªºóµÄµãÔÆ×ËÌ¬£¬ÔÚÕû¸ö¼ÆËã¹ı³ÌÖĞ£¬ÕâÒ»²½ÊÇ¿ÉÑ¡Ïî
+  ////ä½¿ç”¨æ—‹è½¬è½¬åŒ–çŸ©é˜µï¼Œå¯¹æ‰€æœ‰å…¶ä»–ç‚¹äº‘è¿›è¡Œæ—‹è½¬ï¼Œå› ä¸ºè¦çœ‹åˆ°æœ€åæ—‹è½¬åçš„ç‚¹äº‘å§¿æ€ï¼Œåœ¨æ•´ä¸ªè®¡ç®—è¿‡ç¨‹ä¸­ï¼Œè¿™ä¸€æ­¥æ˜¯å¯é€‰é¡¹
   return 0;
 }

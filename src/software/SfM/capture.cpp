@@ -11,7 +11,7 @@ CvRect rect;
 CvPoint origin;
 bool istuNumOne = true;
 string image_path = "";
-//»ñÈ¡Êó±êµãµÄÎ»ÖÃ
+//è·å–é¼ æ ‡ç‚¹çš„ä½ç½®
 void onMouse(int event, int x, int y, int flags, void *param) {
   if (drawing) {
     rect.x = MIN(origin.x, x);
@@ -48,8 +48,8 @@ int capture(string& imageName) {
     return EXIT_FAILURE;
   }
   cvNamedWindow("screenshot", 0);
-  //ËõĞ¡ÌáÈ¡µÄÇøÓò
-  cvSetMouseCallback("screenshot", onMouse, NULL);//²¶×½Êó±ê
+  //ç¼©å°æå–çš„åŒºåŸŸ
+  cvSetMouseCallback("screenshot", onMouse, NULL);//æ•æ‰é¼ æ ‡
   cvShowImage("screenshot", src);
   cvWaitKey(0);
   cvReleaseImage(&src);
