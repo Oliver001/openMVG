@@ -180,15 +180,16 @@ int main(int argc, char **argv) {
     Generate_SfM_Report(sfmEngine.Get_SfM_Data(),
       stlplus::create_filespec(sOutDir, "SfMReconstruction_Report.html"));
 
-    //将索引号保存至文件中
+    //灏嗙储寮曞彿淇濆瓨鑷虫枃浠朵腑
     SfM_Data my_sfm_data = sfmEngine.Get_SfM_Data();
-    string txtPath = my_sfm_data.s_root_path + "/../" + "txtFiles";
+    string txtPath = my_sfm_data.s_root_path + "/../txtFiles";
     mkdir(txtPath.c_str());
     fstream index(txtPath + "/validImgIndex.txt", ios::out);
-    //存储有效poses的索引号
+    //瀛樺偍鏈夋晥poses鐨勭储寮曞彿
     for (Poses::iterator itr = my_sfm_data.poses.begin();
       itr != my_sfm_data.poses.end(); itr++) {
-      index << itr->first << endl;
+      index << itr->first <<" "
+        <<my_sfm_data.GetViews().at(itr->first)->s_Img_path<<endl;
     }
     index.close();
 
@@ -201,10 +202,6 @@ int main(int argc, char **argv) {
     Save(sfmEngine.Get_SfM_Data(),
       stlplus::create_filespec(sOutDir, "cloud_and_poses", ".ply"),
       ESfM_Data(ALL));
-
-    Save(sfmEngine.Get_SfM_Data(), stlplus::create_filespec(sOutDir, "sfm_data", ".json"), 
-        ESfM_Data(VIEWS | EXTRINSICS | INTRINSICS));
-
     return EXIT_SUCCESS;
   }
   return EXIT_FAILURE;
