@@ -280,25 +280,7 @@ if(NOT OpenMVG_BUILD_TX_MINIMUM)
   # -
   # Use openCV Feature detector to describe the images
   # -
-  IF(OpenMVG_USE_OPENCV)
-    ADD_EXECUTABLE(openMVG_main_ComputeFeatures_OpenCV
-      main_ComputeFeatures_OpenCV.cpp)
-    TARGET_LINK_LIBRARIES(openMVG_main_ComputeFeatures_OpenCV
-      openMVG_system
-      openMVG_image
-      openMVG_features
-      openMVG_multiview
-      openMVG_sfm
-      stlplus
-      vlsift
-      ${OpenCV_LIBS})
-
-    SET_PROPERTY(TARGET openMVG_main_ComputeFeatures_OpenCV PROPERTY FOLDER OpenMVG/software)
-    SET_PROPERTY(TARGET openMVG_main_ComputeFeatures_OpenCV PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-    INSTALL(TARGETS openMVG_main_ComputeFeatures_OpenCV DESTINATION bin/)
-  ENDIF(OpenMVG_USE_OPENCV)
-
-
+  
   ###
   # SfM Research tools
   #
@@ -337,6 +319,23 @@ if(NOT OpenMVG_BUILD_TX_MINIMUM)
   CONFIGURE_FILE(${OPENMVG_TUTORIAL_IN_FILE}
     "${CMAKE_CURRENT_BINARY_DIR}/SfM_SequentialPipeline.py" @ONLY)
 endif(NOT OpenMVG_BUILD_TX_MINIMUM)
+IF(OpenMVG_USE_OPENCV)
+  ADD_EXECUTABLE(openMVG_main_ComputeFeatures_OpenCV
+    main_ComputeFeatures_OpenCV.cpp)
+  TARGET_LINK_LIBRARIES(openMVG_main_ComputeFeatures_OpenCV
+    openMVG_system
+    openMVG_image
+    openMVG_features
+    openMVG_multiview
+    openMVG_sfm
+    stlplus
+    vlsift
+    ${OpenCV_LIBS})
+
+  SET_PROPERTY(TARGET openMVG_main_ComputeFeatures_OpenCV PROPERTY FOLDER OpenMVG/software)
+  SET_PROPERTY(TARGET openMVG_main_ComputeFeatures_OpenCV PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+  INSTALL(TARGETS openMVG_main_ComputeFeatures_OpenCV DESTINATION bin/)
+ENDIF(OpenMVG_USE_OPENCV)
 
 IF (OpenMVG_BUILD_TIANXIAN)
   IF(OpenMVG_USE_OPENCV)
