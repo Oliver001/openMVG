@@ -581,8 +581,8 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
     x0 = 0.0;
     y0 = 0.0;
   }
-  outGPS << setprecision(15) << "经度：" << x0 << endl;
-  outGPS << setprecision(15) << "纬度：" << y0 << endl;
+  outGPS << setprecision(15) << "经度 " << x0 << endl;
+  outGPS << setprecision(15) << "纬度 " << y0 << endl;
   //(6)计算海拔
   //获取虚拟空间中相机纵坐标的均值
   double sumOfZ = 0.0;
@@ -592,6 +592,6 @@ void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &pose
   sumOfZ /= posesNum;
   double Z = commonZ + (z0 - sumOfZ) * x[0];
   /*cout << setprecision(15) << "海拔：" << Z << endl;*/
-  outGPS << setprecision(15) << "海拔：" << Z << endl;
+  outGPS << setprecision(15) << "海拔 " << Z << endl;
   outGPS.close();
 }

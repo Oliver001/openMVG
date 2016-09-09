@@ -189,5 +189,5 @@ int drawLines(const char* imageName, const char* outputImgName) {
 	    << keylines[i].endPointX << " " << keylines[i].endPointY << std::endl;
 	}
 	out.close();
-	return keylines.size();
+	return limitMax;
 }

@@ -100,10 +100,10 @@ int main(int argc, char **argv) {
   for (size_t i = 0; i < posesIndex.size(); i++)
     cout << posesIndex[i] << " ";
   std::cout << endl;
-  std::cout << "输入要匹配的张数：";
-
+  std::cout << "输入要匹配的张数";
+  
   std::cin >> drawLinePicNum;
-  std::cout << "输入每张的索引号(每张的索引号，不能一样)：";
+  std::cout << "输入每张的索引号(每张的索引号，不能一样)";
   for (int i = 0; i < drawLinePicNum; i++) {
     int tmp;
     std::cin >> tmp;
@@ -124,7 +124,7 @@ int main(int argc, char **argv) {
   for (auto i : drawLinePicIndex) {
     View *view = my_sfm_data.views.at(i).get();
     std::string imgName = my_sfm_data.s_root_path + "/" + view->s_Img_path;
-    
+
     // 从大图片框出天线，将小图片写到 image_path 同时将小
     // 图片的左上角坐标写到matches目录下image_path.txt
 #ifdef _WIN32
