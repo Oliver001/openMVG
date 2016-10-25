@@ -103,7 +103,7 @@ void mdzz(openMVG::sfm::SfM_Data &my_sfm_data,
 	vector<openMVG::Vec3> &points3DForGPS, const vector<cv::Point2d> &pointPair);
 
 void computeAVG(const openMVG::sfm::SfM_Data &my_sfm_data,
-	const vector<cv::Vec2d> &horizontalVecs, const vector<double> &verticalAngles);
+	const vector<cv::Vec2d> &horizontalVecs, vector<double> &verticalAngles);
 
 void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &poseIndex,
 	openMVG::sfm::SfM_Data &my_sfm_data, const vector<openMVG::Vec3> &points3DForGPS);

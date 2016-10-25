@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
       ESfM_Data(ALL));
 
     Save(sfmEngine.Get_SfM_Data(), stlplus::create_filespec(sOutDir, "sfm_data", ".json"), 
-        ESfM_Data(VIEWS | EXTRINSICS | INTRINSICS));
+        ESfM_Data(ALL));
 
     return EXIT_SUCCESS;
   }

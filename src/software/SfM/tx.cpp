@@ -108,6 +108,7 @@ double getDistance(double tx, double ty, double tz, double rx, double ry, double
 
 //计算俯仰角
 double getFuYang(double tx, double ty, double tz, double rx, double ry, double rz) {
+	std::cout << "fuyang"<< tx << ' ' << ty << ' '<< tz << ' '<< rx << ' ' << ry << ' '<< rz << std::endl;
   return (90.0 - asin(getDistance(tx, ty, tz, tx, ty, rz) / getDistance(tx, ty, tz, rx, ry, rz))*180.0 / M_PI);
 }
 

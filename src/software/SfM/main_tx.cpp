@@ -1,5 +1,7 @@
+#include <algorithm>
 #include "main_tx.h"
 #include "openMVG\multiview\triangulation_nview.hpp"
+#include "Eigen\Eigen\Dense"
 /*@param_input sfm_data
 *@param_input  posesIndex 有效索引编号
 *@param_output rAndroid 从txt文件读取的旋转矩阵
@@ -217,6 +219,21 @@ void computeFundament(cv::Mat &FundamentEPP, const vector<int> &drawLinePicIndex
 	eInvSym.at<double>(2, 0) = -ee.at<double>(1);
 	eInvSym.at<double>(2, 1) = ee.at<double>(0);
 	FundamentEPP = eInvSym*promatric2*promatric1.inv(cv::DECOMP_SVD);
+	/*************************/
+	Eigen::Matrix3d f;
+	f(0, 0) = FundamentEPP.at<double>(0, 0);
+	f(0, 1) = FundamentEPP.at<double>(0, 1);
+	f(0, 0) = FundamentEPP.at<double>(0, 2);
+	f(0, 0) = FundamentEPP.at<double>(0, 0);
+	f(0, 1) = FundamentEPP.at<double>(0, 1);
+	f(0, 2) = FundamentEPP.at<double>(0, 2);
+	f(0, 0) = FundamentEPP.at<double>(0, 0);
+	f(0, 1) = FundamentEPP.at<double>(0, 1);
+	f(0, 2) = FundamentEPP.at<double>(0, 2);
+	std::ofstream out(my_sfm_data.s_root_path + "/../txtFiles/ff.txt", std::ios_base::out | std::ios_base::app);
+	out << f << std::endl<<'\n';
+	out.close();
+
 }
 
 /*
@@ -451,6 +468,7 @@ void mdzz(openMVG::sfm::SfM_Data &my_sfm_data,
 			vector<openMVG::Vec2> points_2;
 			
 			//计算两张图的同名点
+			std::cout << idi<<idj<< '\n';
 			computeCorrespondingPoints(points_1, points_2, my_sfm_data, keyLineArray, 
 				drawLinePair, pointPair, tuIndex1, tuIndex2, idi, idj, FundamentEPP);
 
@@ -474,15 +492,45 @@ void mdzz(openMVG::sfm::SfM_Data &my_sfm_data,
 *
 *IO 写txt
 */
+
+double AvgAngle(vector<double> angles, double r = 3) {
+	std::sort(angles.begin(), angles.end());
+	if (angles.back() < 10) {
+		r = 2;
+	}
+	double sum = 0; 
+	for (const auto &k : angles) {
+		sum += k;
+	}
+	sum /= angles.size();
+	while (std::abs(angles.front() - angles.back()) >= 2 * r) {
+		double front_r = std::abs(angles.front() - sum);
+		double back_r = std::abs(angles.back() - sum);
+		if (front_r > back_r) {
+			auto iter = angles.begin();
+			angles.erase(iter);
+		}
+		else {
+			angles.pop_back();
+		}
+		sum = 0;
+		for (const auto &k : angles) {
+			sum += k;
+		}
+		sum /= angles.size();
+	}
+	return sum;
+}
+
 void computeAVG(const openMVG::sfm::SfM_Data &my_sfm_data,
-	const vector<cv::Vec2d> &horizontalVecs, const vector<double> &verticalAngles)
+	const vector<cv::Vec2d> &horizontalVecs, vector<double> &verticalAngles)
 {
 	double avgHor = 0.0, avgVer = 0.0, deviationHor = 0.0, deviationVer = 0.0;
 	for (size_t i = 0; i < verticalAngles.size(); ++i) {
 		avgVer += verticalAngles[i];
 	}
-	avgVer /= verticalAngles.size();
-
+	//avgVer /= verticalAngles.size();
+	avgVer = AvgAngle(verticalAngles);
 	for (size_t i = 0; i < verticalAngles.size(); ++i) {
 		deviationVer += (verticalAngles[i] - avgVer) * (verticalAngles[i] - avgVer);
 	}
