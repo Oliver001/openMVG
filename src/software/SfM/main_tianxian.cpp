@@ -2,9 +2,9 @@
 //
 #include <iostream>
 #include <map>
-#include "E:/xiangmu_A/software/SfM/tx_measure.h"
-#include "E:/xiangmu_A/software/SfM/myIOutility.h"
-#include "E:/xiangmu_A/software/SfM/decrepit.h"
+#include "tx_measure.h"
+#include "myIOutility.h"
+#include "decrepit.h"
 
 
 //
