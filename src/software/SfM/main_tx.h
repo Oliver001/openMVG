@@ -99,4 +99,10 @@ void computeAVG(const openMVG::sfm::SfM_Data &my_sfm_data,
 
 void GPSandHeight(const vector<vector<double> > &allGPS, const vector<int> &poseIndex,
   openMVG::sfm::SfM_Data &my_sfm_data, const vector<openMVG::Vec3> &points3DForGPS);
+
+
+void getcij(int numBe, int gNum, vector<int> r, vector<int> da, vector<vector<int>> & result);
+Eigen::Matrix<double, 3, 1 > TwoPointsToABC(double x1, double y1, double x2, double y2);
+
+void getPerij(int gNum, vector<int> r, vector<int> da, vector<vector<int>> & result);
 #endif

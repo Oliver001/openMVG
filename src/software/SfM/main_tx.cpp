@@ -6,6 +6,59 @@
 *@param_output allGPS 从txt文件读取的GPS
 *@param_input filePath txt存放的根目录
 */
+
+
+Eigen::Matrix<double, 3, 1 > TwoPointsToABC(double x1, double y1, double x2, double y2) {
+    Eigen::Matrix<double, 3, 1> t;
+    t[0] = y2 - y1;
+    t[1] = x1 - x2;
+    t[2] = x2*y1 - x1*y2;
+    return t;
+}
+
+
+//获取数列的组合
+void getcij(int numBe, int gNum, vector<int> r, vector<int> da, vector<vector<int>> & result)
+{
+    if (gNum == 0)
+    {
+        result.push_back(da);
+        da.clear();
+        return;
+    }
+    if (numBe + gNum > r.size())
+        return;
+    for (int i = numBe; i < r.size(); i++)
+    {
+        da.push_back(r[i]);
+        getcij(i + 1, gNum - 1, r, da, result);
+        da.pop_back();
+    }
+}
+
+//获取数列的排列
+//输入依次为：数字, 数据， 空，结果
+void getPerij(int gNum, vector<int> r, vector<int> da, vector<vector<int>> & result)
+{
+    if (gNum == 0)
+    {
+        result.push_back(da);
+        da.clear();
+        return;
+    }
+    for (int i = 0; i < r.size(); i++)
+    {
+        swap(r[0], r[i]);
+        da.push_back(r[0]);
+        vector<int> tmp = r;
+        tmp.erase(tmp.begin());
+        getPerij(gNum - 1, tmp, da, result);
+        da.pop_back();
+        swap(r[0], r[i]);
+    }
+}
+
+
 void readRotations(const SfM_Data & sfm_data,
   const vector<int> &posesIndex,
   vector<Eigen::Matrix<double, 3, 3> > &rAndroid,
@@ -24,7 +77,7 @@ void readRotations(const SfM_Data & sfm_data,
     double tempGPS[3]{ 0.0 };
     vector<double> tempGPSvec;
     string fileName = filePath + sfm_data.views.at(i)->s_Img_path + ".txt";
-    string angleId = "Orientation_NEW_API:";
+    string angleId = "OrientationFromVector:";
     getInfoFromTxt(tempAngle, fileName, angleId);
     string GpsId = "GPS:";
     getInfoFromTxt(tempGPS, fileName, GpsId);
@@ -135,9 +188,12 @@ void lineDetector(const string &smallPicPreName, const vector<int> &picIndex,
       continue;
     } else {
       std::fstream in(picWithLine + ".txt", std::ios::in);
-      int j = 0;
-      while (in.eof()) {
-        in >> lineInOnePic[j].startPointX >> lineInOnePic[j].startPointY >> lineInOnePic[j].endPointX >> lineInOnePic[j].endPointY;
+     // int j = 0;
+   
+      while (!in.eof()) {
+        cv::line_descriptor::KeyLine oneLine;
+        in >> oneLine.startPointX >> oneLine.startPointY >> oneLine.endPointX >> oneLine.endPointY;
+        lineInOnePic.push_back(oneLine);
       }
       in.close();
       keyLineArray.push_back(lineInOnePic);
@@ -375,7 +431,7 @@ void computeAngle(openMVG::sfm::SfM_Data &my_sfm_data,
 *@out vecticalAngles
 *@out points3DForGPS
 */
-void mdzz(openMVG::sfm::SfM_Data &my_sfm_data,
+void Compute_Main(openMVG::sfm::SfM_Data &my_sfm_data,
   Eigen::Matrix<double, 3, 3> finalrt,
   const vector<int> &drawLinePicIndex, const vector<int> &drawLinePair,
   const vector<vector<cv::line_descriptor::KeyLine> > &keyLineArray,
