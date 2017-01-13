@@ -18,10 +18,10 @@
 #include <fstream>
 #include <vector>
 
-#include "D:\code\ZTE\source\openMVG\src\software\SfM\tx.h"
-#include "D:\code\ZTE\source\openMVG\src\software\SfM\capture.h"
+#include "tx.h"
+#include "capture.h"
 #include "proj_api.h"
-#include "D:\code\ZTE\source\openMVG\src\software\SfM\main_tx.h"
+#include "main_tx.h"
 
 using namespace openMVG::sfm;
 
