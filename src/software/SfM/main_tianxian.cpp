@@ -82,18 +82,36 @@ int main(int argc, char **argv) {
     virtualToReality(finalrt, posesNum, rotationsAndroid, rotations, my_sfm_data.s_root_path + "/..");
 
 
+    int drawLinePicNum;
     vector<int> drawLinePicIndex;
 #ifdef _WIN32
     std::cout << "SFM 成功的图像数量: " << posesIndex.size() << '\n';
     std::cout << "成功的图像索引号: ";
-#endif
-    for (size_t i = 0; i < posesIndex.size(); ++i) {
-        //cout << posesIndex[i] << " ";
-        drawLinePicIndex.push_back(posesIndex[i]);
+    for (int i = 0; i < posesIndex.size(); ++i) {
+        cout << posesIndex[i] << ' ';
     }
-    int drawLinePicNum = posesIndex.size();
+    std::cout << "\n要匹配的张数: ";
+    cin >> drawLinePicNum;
+    for (size_t i = 0; i < drawLinePicNum; ++i) {
+        //cout << posesIndex[i] << " ";
+        int tmp;
+        cin >> tmp;
+        drawLinePicIndex.push_back(tmp);
+    }
+
+#else
+    //读取数量和编号
+    std::fstream idx_id_in(my_sfm_data.s_root_path + "/../matches/idx_id.txt", std::ios::in);
+    idx_id_in >> drawLinePicNum;
+    int temp = 0;
+    for (int i = 0; i < drawLinePicNum; i++) {
+        idx_id_in >> temp;
+        drawLinePicIndex.push_back(temp);
+    }
+    idx_id_in.close();
+#endif
+
     vector<cv::Point2d> pointPair;
-    // vector<vector<cv::line_descriptor::KeyLine> > keyLineArray;
     vector<Eigen::Matrix<double, 3, 4>, Eigen::aligned_allocator<Eigen::Matrix<double, 3, 4> > > projPointMatVec;
     for (int i = 0; i < drawLinePicNum; ++i) {
 
@@ -103,7 +121,6 @@ int main(int argc, char **argv) {
         openMVG::geometry::Pose3 pose = my_sfm_data.GetPoseOrDie(view);
         Eigen::Matrix<double, 3, 4> projMat = cam->get_projective_equivalent(pose);
         projPointMatVec.push_back(projMat);
-
         string img1Name = my_sfm_data.s_root_path + "/" + view->s_Img_path;
 
 #ifdef _WIN32
